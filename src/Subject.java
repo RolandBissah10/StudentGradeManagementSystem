@@ -7,11 +7,10 @@ public abstract class Subject {
         this.subjectCode = subjectCode;
     }
 
-    // Abstract methods
     public abstract void displaySubjectDetails();
     public abstract String getSubjectType();
 
-    // Getters
+
     public String getSubjectName() { return subjectName; }
     public String getSubjectCode() { return subjectCode; }
 }

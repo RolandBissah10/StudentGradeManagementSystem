@@ -22,12 +22,12 @@ public abstract class Student {
         return String.format("STU%03d", studentCounter);
     }
 
-    // Abstract methods
+
     public abstract void displayStudentDetails();
     public abstract String getStudentType();
     public abstract double getPassingGrade();
 
-    // Getters and setters
+
     public String getStudentId() { return studentId; }
     public String getName() { return name; }
     public int getAge() { return age; }

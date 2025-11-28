@@ -59,7 +59,7 @@ public class Grade implements Gradable {
         else return "F";
     }
 
-    // Getters
+
     public String getGradeId() { return gradeId; }
     public String getStudentId() { return studentId; }
     public Subject getSubject() { return subject; }
