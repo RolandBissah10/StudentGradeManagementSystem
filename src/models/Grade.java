@@ -1,3 +1,5 @@
+package models;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -43,12 +45,12 @@ public class Grade implements Gradable {
     }
 
     public void displayGradeDetails() {
-        System.out.println("Grade ID: " + gradeId);
-        System.out.println("Student ID: " + studentId);
-        System.out.println("Subject: " + subject.getSubjectName() + " (" + subject.getSubjectType() + ")");
-        System.out.println("Grade: " + grade + "%");
+        System.out.println("models.Grade ID: " + gradeId);
+        System.out.println("models.Student ID: " + studentId);
+        System.out.println("models.Subject: " + subject.getSubjectName() + " (" + subject.getSubjectType() + ")");
+        System.out.println("models.Grade: " + grade + "%");
         System.out.println("Date: " + date);
-        System.out.println("Letter Grade: " + getLetterGrade());
+        System.out.println("Letter models.Grade: " + getLetterGrade());
     }
 
     public String getLetterGrade() {

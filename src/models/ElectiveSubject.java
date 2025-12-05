@@ -1,3 +1,5 @@
+package models;
+
 public class ElectiveSubject extends Subject {
     private boolean mandatory = false;
 
@@ -7,7 +9,7 @@ public class ElectiveSubject extends Subject {
 
     @Override
     public void displaySubjectDetails() {
-        System.out.println("Subject: " + getSubjectName() + " (" + getSubjectCode() + ")");
+        System.out.println("models.Subject: " + getSubjectName() + " (" + getSubjectCode() + ")");
         System.out.println("Type: Elective");
         System.out.println("Mandatory: " + (isMandatory() ? "Yes" : "No"));
     }

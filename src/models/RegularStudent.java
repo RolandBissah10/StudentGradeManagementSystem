@@ -1,3 +1,5 @@
+package models;
+
 public class RegularStudent extends Student {
     private double passingGrade = 50.0;
 
@@ -7,12 +9,12 @@ public class RegularStudent extends Student {
 
     @Override
     public void displayStudentDetails() {
-        System.out.println("Student ID: " + getStudentId());
+        System.out.println("models.Student ID: " + getStudentId());
         System.out.println("Name: " + getName());
         System.out.println("Type: " + getStudentType());
         System.out.println("Age: " + getAge());
         System.out.println("Email: " + getEmail());
-        System.out.println("Passing Grade: " + getPassingGrade() + "%");
+        System.out.println("Passing models.Grade: " + getPassingGrade() + "%");
         System.out.println("Status: " + getStatus());
     }
 

@@ -1,3 +1,5 @@
+package models;
+
 public class StudentManager {
     private Student[] students;
     private int studentCount;
@@ -56,7 +58,7 @@ public class StudentManager {
                     status);
 
             int subjectCount = gradeManager.getGradeCountForStudent(student.getStudentId());
-            System.out.printf("      | Enrolled Subjects: %d | Passing Grade: %.0f%%",
+            System.out.printf("      | Enrolled Subjects: %d | Passing models.Grade: %.0f%%",
                     subjectCount,
                     student.getPassingGrade());
 
@@ -72,7 +74,7 @@ public class StudentManager {
         double classAverage = studentsWithGrades > 0 ? classTotal / studentsWithGrades : 0;
 
         System.out.println("\nTotal Students: " + studentCount);
-        System.out.println("Average Class Grade: " + String.format("%.1f", classAverage) + "%");
+        System.out.println("Average Class models.Grade: " + String.format("%.1f", classAverage) + "%");
     }
 
     public double getAverageClassGrade(GradeManager gradeManager) {
@@ -101,4 +103,6 @@ public class StudentManager {
     public int getStudentCountValue() {
         return studentCount;
     }
+
+
 }

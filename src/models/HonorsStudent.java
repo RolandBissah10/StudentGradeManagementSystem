@@ -1,3 +1,5 @@
+package models;
+
 public class HonorsStudent extends Student {
     private double passingGrade = 60.0;
     private boolean honorsEligible;
@@ -9,12 +11,12 @@ public class HonorsStudent extends Student {
 
     @Override
     public void displayStudentDetails() {
-        System.out.println("Student ID: " + getStudentId());
+        System.out.println("models.Student ID: " + getStudentId());
         System.out.println("Name: " + getName());
         System.out.println("Type: " + getStudentType());
         System.out.println("Age: " + getAge());
         System.out.println("Email: " + getEmail());
-        System.out.println("Passing Grade: " + getPassingGrade() + "%");
+        System.out.println("Passing models.Grade: " + getPassingGrade() + "%");
         System.out.println("Honors Eligible: " + (checkHonorsEligibility() ? "Yes" : "No"));
         System.out.println("Status: " + getStatus());
     }

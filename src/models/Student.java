@@ -1,3 +1,5 @@
+package models;
+
 public abstract class Student {
     private String studentId;
     private String name;
