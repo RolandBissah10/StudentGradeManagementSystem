@@ -9,7 +9,7 @@ public class CoreSubject extends Subject {
 
     @Override
     public void displaySubjectDetails() {
-        System.out.println("models.Subject: " + getSubjectName() + " (" + getSubjectCode() + ")");
+        System.out.println("Subject: " + getSubjectName() + " (" + getSubjectCode() + ")");
         System.out.println("Type: Core");
         System.out.println("Mandatory: " + (isMandatory() ? "Yes" : "No"));
     }
