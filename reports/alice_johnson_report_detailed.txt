@@ -1,0 +1,28 @@
+DETAILED GRADE REPORT
+Generated: 2025-12-06 14:14:54
+=========================================
+
+STUDENT INFORMATION
+ID: STU001
+Name: Alice Johnson
+Type: Regular
+Age: 16
+Email: alice.johnson@school.edu
+Phone: +1-555-1001
+Passing Grade: 50.0%
+
+GRADE HISTORY
+---------------------------------------------------
+GRD ID   | DATE       | SUBJECT         | TYPE     | GRADE
+---------------------------------------------------
+GRD005   | 06-12-2025 | Art             | Elective | 63.0%
+GRD004   | 06-12-2025 | Music           | Elective | 88.0%
+GRD003   | 06-12-2025 | Science         | Core     | 92.0%
+GRD002   | 06-12-2025 | English         | Core     | 78.0%
+GRD001   | 06-12-2025 | Mathematics     | Core     | 85.0%
+
+STATISTICS
+Total Grades: 5
+Overall Average: 81.2%
+Core Subjects Average: 85.0%
+Elective Subjects Average: 75.5%
