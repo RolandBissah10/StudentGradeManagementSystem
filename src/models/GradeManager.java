@@ -21,12 +21,12 @@ public class GradeManager {
 
     public void viewGradesByStudent(String studentId, Student student) {
         if (student == null) {
-            System.out.println("models.Student not found!");
+            System.out.println("Student not found!");
             return;
         }
 
-        System.out.println("\nmodels.Student: " + studentId + " - " + student.getName());
-        System.out.println("Type: " + student.getStudentType() + " models.Student");
+        System.out.println("\nStudent: " + studentId + " - " + student.getName());
+        System.out.println("Type: " + student.getStudentType() + " Student");
         double overallAvg = calculateOverallAverage(studentId);
         System.out.println("Current Average: " + String.format("%.1f", overallAvg) + "%");
         System.out.println("Status: " + (overallAvg >= student.getPassingGrade() ? "PASSING ✓" : "FAILING"));
