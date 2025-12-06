@@ -45,7 +45,7 @@ public class BulkImportService {
 
                 if (rowNumber == 1) {
                     // Validate header
-                    if (!line.equals("StudentID,SubjectName,SubjectType,models.Grade")) {
+                    if (!line.equals("StudentID,SubjectName,SubjectType,Grade")) {
                         throw new InvalidFileFormatException(filename + ".csv");
                     }
                     continue;
