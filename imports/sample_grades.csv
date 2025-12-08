@@ -1,6 +1,13 @@
 StudentID,SubjectName,SubjectType,Grade
 STU001,Mathematics,Core,85
 STU002,English,Core,92
-STU003,Music,Elective,72
+STU003,Music,Elective,28
 STU004,Science,Core,88
 STU005,Art,Elective,95
+STU006,Mathematics,Core,78
+STU007,English,Core,65
+STU008,Physical Education,Elective,82
+STU009,Science,Core,91
+STU010,Music,Elective,74
+STU211,Science,Core,913
+STU123,Music,Elective,745

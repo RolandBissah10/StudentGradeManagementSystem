@@ -1,0 +1,28 @@
+DETAILED GRADE REPORT
+Generated: 2025-12-08 11:23:50
+=========================================
+
+STUDENT INFORMATION
+ID: STU006
+Name: Audrey Plange
+Type: Regular
+Age: 21
+Email: plange@gmail.com
+Phone: +233 24 182 6889
+Passing Grade: 50.0%
+
+GRADE HISTORY
+---------------------------------------------------
+GRD ID   | DATE       | SUBJECT         | TYPE     | GRADE
+---------------------------------------------------
+GRD027   | 08-12-2025 | Science         | Core     | 78.0%
+GRD026   | 08-12-2025 | English         | Core     | 83.0%
+GRD025   | 08-12-2025 | Music           | Elective | 59.0%
+GRD024   | 08-12-2025 | Art             | Elective | 72.0%
+GRD023   | 08-12-2025 | Mathematics     | Core     | 93.0%
+
+STATISTICS
+Total Grades: 5
+Overall Average: 77.0%
+Core Subjects Average: 84.7%
+Elective Subjects Average: 65.5%

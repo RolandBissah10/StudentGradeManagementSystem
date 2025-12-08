@@ -34,12 +34,19 @@ public class Main {
     }
 
     private static void initializeSampleData() {
-        // Add 5 sample students (3 Regular, 2 Honors)
+        //Add sample Students
+        gradeManager.addGrade(new Grade("STU005", new ElectiveSubject("Physical Education", "PE"), 82.0));
         studentManager.addStudent(new RegularStudent("Alice Johnson", 16, "alice.johnson@school.edu", "+1-555-1001"));
         studentManager.addStudent(new HonorsStudent("Bob Smith", 17, "bob.smith@school.edu", "+1-555-1002"));
         studentManager.addStudent(new RegularStudent("Carol Martinez", 16, "carol.martinez@school.edu", "+1-555-1003"));
         studentManager.addStudent(new HonorsStudent("David Chen", 17, "david.chen@school.edu", "+1-555-1004"));
         studentManager.addStudent(new RegularStudent("Emma Wilson", 16, "emma.wilson@school.edu", "+1-555-1005"));
+
+        studentManager.addStudent(new HonorsStudent("Alice Alison", 16, "alice.alison@school.edu", "+1-555-1901"));
+        studentManager.addStudent(new RegularStudent("Melendez Praise", 18,"praiseM@school.edu", "+1-666-8790"));
+        studentManager.addStudent(new HonorsStudent("David Frank", 19,  "david.frank@school.edu", "+1-666-8791"));
+        studentManager.addStudent(new RegularStudent("John Williams ", 19,  "johnWill@school.edu", "+1-686-8594"));
+        studentManager.addStudent(new HonorsStudent("John Bill", 18,  "billjohn@school.edu", "+1-877-0246"));
 
         // Add sample grades
         gradeManager.addGrade(new Grade("STU001", new CoreSubject("Mathematics", "MATH"), 85.0));
@@ -67,6 +74,36 @@ public class Main {
         gradeManager.addGrade(new Grade("STU005", new CoreSubject("English", "ENG"), 82.0));
         gradeManager.addGrade(new Grade("STU005", new ElectiveSubject("Art", "ART"), 75.0));
         gradeManager.addGrade(new Grade("STU005", new ElectiveSubject("Physical Education", "PE"), 82.0));
+//added students
+        gradeManager.addGrade(new Grade("STU006", new CoreSubject("Mathematics", "MATH"), 80.0));
+        gradeManager.addGrade(new Grade("STU006", new CoreSubject("English", "ENG"), 70.0));
+        gradeManager.addGrade(new Grade("STU006", new CoreSubject("Science", "SCI"), 90.0));
+        gradeManager.addGrade(new Grade("STU006", new ElectiveSubject("Music", "MUS"), 88.0));
+        gradeManager.addGrade(new Grade("STU006", new ElectiveSubject("Art", "ART"), 64.0));
+
+        gradeManager.addGrade(new Grade("STU007", new CoreSubject("Mathematics", "MATH"), 40.0));
+        gradeManager.addGrade(new Grade("STU007", new CoreSubject("English", "ENG"), 45.0));
+        gradeManager.addGrade(new Grade("STU007", new CoreSubject("Science", "SCI"), 38.0));
+        gradeManager.addGrade(new Grade("STU007", new ElectiveSubject("Music", "MUS"), 28.0));
+        gradeManager.addGrade(new Grade("STU007", new ElectiveSubject("Art", "ART"), 32.0));
+
+        gradeManager.addGrade(new Grade("STU008", new CoreSubject("Mathematics", "MATH"), 70.0));
+        gradeManager.addGrade(new Grade("STU008", new CoreSubject("English", "ENG"), 85.0));
+        gradeManager.addGrade(new Grade("STU008", new CoreSubject("Science", "SCI"), 98.0));
+        gradeManager.addGrade(new Grade("STU008", new ElectiveSubject("Music", "MUS"), 78.0));
+        gradeManager.addGrade(new Grade("STU008", new ElectiveSubject("Art", "ART"), 82.0));
+
+        gradeManager.addGrade(new Grade("STU009", new CoreSubject("Mathematics", "MATH"), 49.0));
+        gradeManager.addGrade(new Grade("STU009", new CoreSubject("English", "ENG"), 45.0));
+        gradeManager.addGrade(new Grade("STU009", new CoreSubject("Science", "SCI"), 37.0));
+        gradeManager.addGrade(new Grade("STU009", new ElectiveSubject("Music", "MUS"), 88.0));
+        gradeManager.addGrade(new Grade("STU009", new ElectiveSubject("Art", "ART"), 36.0));
+
+        gradeManager.addGrade(new Grade("STU0010", new CoreSubject("Mathematics", "MATH"), 89.0));
+        gradeManager.addGrade(new Grade("STU0010", new CoreSubject("English", "ENG"), 90.0));
+        gradeManager.addGrade(new Grade("STU0010", new CoreSubject("Science", "SCI"), 91.0));
+        gradeManager.addGrade(new Grade("STU0010", new ElectiveSubject("Music", "MUS"), 92.0));
+        gradeManager.addGrade(new Grade("STU0010", new ElectiveSubject("Art", "ART"), 93.0));
 
         // Update honors eligibility
         updateHonorsEligibility();

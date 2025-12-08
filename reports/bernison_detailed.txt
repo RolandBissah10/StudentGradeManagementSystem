@@ -1,0 +1,29 @@
+DETAILED GRADE REPORT
+Generated: 2025-12-07 15:07:42
+=========================================
+
+STUDENT INFORMATION
+ID: STU006
+Name: Bernison
+Type: Honors
+Age: 21
+Email: b@gmail.com
+Phone: 0209000000
+Passing Grade: 60.0%
+
+GRADE HISTORY
+---------------------------------------------------
+GRD ID   | DATE       | SUBJECT         | TYPE     | GRADE
+---------------------------------------------------
+GRD028   | 07-12-2025 | Physical Education | Elective | 97.0%
+GRD027   | 07-12-2025 | Art             | Elective | 85.0%
+GRD026   | 07-12-2025 | Music           | Elective | 85.0%
+GRD025   | 07-12-2025 | Science         | Core     | 95.0%
+GRD024   | 07-12-2025 | English         | Core     | 90.0%
+GRD023   | 07-12-2025 | Mathematics     | Core     | 87.0%
+
+STATISTICS
+Total Grades: 6
+Overall Average: 89.8%
+Core Subjects Average: 90.7%
+Elective Subjects Average: 89.0%
