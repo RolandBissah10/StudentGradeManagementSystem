@@ -35,7 +35,6 @@ public class Main {
 
     private static void initializeSampleData() {
         //Add sample Students
-        gradeManager.addGrade(new Grade("STU005", new ElectiveSubject("Physical Education", "PE"), 82.0));
         studentManager.addStudent(new RegularStudent("Alice Johnson", 16, "alice.johnson@school.edu", "+1-555-1001"));
         studentManager.addStudent(new HonorsStudent("Bob Smith", 17, "bob.smith@school.edu", "+1-555-1002"));
         studentManager.addStudent(new RegularStudent("Carol Martinez", 16, "carol.martinez@school.edu", "+1-555-1003"));
