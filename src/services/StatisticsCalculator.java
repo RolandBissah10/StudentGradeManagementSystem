@@ -50,12 +50,33 @@ public class StatisticsCalculator {
             else distribution[4]++;                  // F
         }
 
+        // Find maximum count for scaling
+        int maxCount = 0;
+        for (int count : distribution) {
+            if (count > maxCount) {
+                maxCount = count;
+            }
+        }
+
         String[] categories = {"90-100% (A)", "80-89% (B)", "70-79% (C)", "60-69% (D)", "0-59% (F)"};
 
+        // Display matrix/bar chart visualization
         for (int i = 0; i < distribution.length; i++) {
             double percentage = gradeCount > 0 ? (distribution[i] * 100.0) / gradeCount : 0;
-            System.out.printf("%-12s: %5.1f%% (%d grades)%n",
-                    categories[i], percentage, distribution[i]);
+
+            // Display category label
+            System.out.printf("%-12s: ", categories[i]);
+
+            // Draw bar chart (scaled to fit in console)
+            if (maxCount > 0) {
+                int barLength = (int) Math.round((distribution[i] * 40.0) / maxCount);
+                for (int j = 0; j < barLength; j++) {
+                    System.out.print("█");
+                }
+            }
+
+            // Display percentage and count
+            System.out.printf(" %5.1f%% (%d grades)%n", percentage, distribution[i]);
         }
         System.out.println();
     }
