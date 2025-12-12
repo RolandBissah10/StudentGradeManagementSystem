@@ -1,5 +1,7 @@
 package models;
 
+import interfaces.Gradable;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
