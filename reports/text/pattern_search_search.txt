@@ -1,0 +1,14 @@
+STUDENT SEARCH RESULTS
+Generated: 2025-12-13 13:03:53
+=========================================
+
+ID       | NAME                 | TYPE       | EMAIL                     | PHONE           | AVERAGE
+---------------------------------------------------------------------------
+STU001   | Alice Johnson        | Regular    | alice.johnson@universi... | +1-555-1001     |   80.6%
+STU004   | David Lee            | Regular    | david.lee@university.edu  | +1-555-1004     |   77.4%
+STU006   | Robert Smith         | Honors     | robert.smith@universit... | +1-555-2001     |   70.0%
+STU009   | Sophia Martinez      | Honors     | sophia.martinez@univer... | +1-555-2004     |   80.0%
+
+Total students found: 4
+Export format: Plain text (UTF-8)
+Generated with NIO.2 API
