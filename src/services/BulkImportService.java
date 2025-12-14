@@ -4,13 +4,17 @@ import exceptions.InvalidFileFormatException;
 import exceptions.StudentNotFoundException;
 import exceptions.InvalidGradeException;
 import models.*;
+import utils.ValidationUtils;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 public class BulkImportService {
     private StudentManager studentManager;
@@ -23,109 +27,131 @@ public class BulkImportService {
 
     public void importGradesFromCSV(String filename) {
         String logFilename = "import_log_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + ".txt";
-        int totalRows = 0;
+        AtomicInteger totalRows = new AtomicInteger();
         int successfulImports = 0;
         int failedImports = 0;
 
-        try (BufferedReader reader = new BufferedReader(new FileReader("imports/" + filename + ".csv"));
-             PrintWriter logWriter = new PrintWriter("imports/" + logFilename)) {
+        Path filePath = Paths.get("imports", filename + ".csv");
+
+        if (!Files.exists(filePath)) {
+            System.out.println("✗ ERROR: File not found: " + filePath);
+            return;
+        }
+
+        try (Stream<String> lines = Files.lines(filePath);
+             PrintWriter logWriter = new PrintWriter(Files.newBufferedWriter(Paths.get("imports", logFilename)))) {
 
             logWriter.println("BULK IMPORT LOG");
             logWriter.println("File: " + filename + ".csv");
             logWriter.println("Started: " + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+            logWriter.println("Method: NIO.2 Streaming");
             logWriter.println("=========================================");
             logWriter.println();
 
-            String line;
-            int rowNumber = 0;
+            // Use stream for memory-efficient processing
+            totalRows.set((int) lines.skip(1) // Skip header
+                    .map(line -> processCSVRow(line, logWriter, totalRows.incrementAndGet()))
+                    .filter(result -> result)
+                    .count());
 
-            while ((line = reader.readLine()) != null) {
-                rowNumber++;
-                totalRows++;
-
-                if (rowNumber == 1) {
-                    // Validate header
-                    if (!line.equals("StudentID,SubjectName,SubjectType,Grade")) {
-                        throw new InvalidFileFormatException(filename + ".csv");
-                    }
-                    continue;
-                }
-
-                String[] parts = line.split(",");
-                if (parts.length != 4) {
-                    logWriter.println("Row " + rowNumber + ": Invalid format - expected 4 columns, found " + parts.length);
-                    failedImports++;
-                    continue;
-                }
-
-                String studentId = parts[0].trim();
-                String subjectName = parts[1].trim();
-                String subjectType = parts[2].trim();
-                String gradeStr = parts[3].trim();
-
-                try {
-                    // Validate student exists
-                    Student student = studentManager.findStudent(studentId);
-                    if (student == null) {
-                        throw new StudentNotFoundException(studentId);
-                    }
-
-                    // Validate grade
-                    double grade;
-                    try {
-                        grade = Double.parseDouble(gradeStr);
-                    } catch (NumberFormatException e) {
-                        throw new InvalidGradeException(-1);
-                    }
-
-                    if (grade < 0 || grade > 100) {
-                        throw new InvalidGradeException(grade);
-                    }
-
-                    // Validate subject type and create subject
-                    Subject subject;
-                    if (subjectType.equalsIgnoreCase("Core")) {
-                        subject = new CoreSubject(subjectName, getSubjectCode(subjectName));
-                    } else if (subjectType.equalsIgnoreCase("Elective")) {
-                        subject = new ElectiveSubject(subjectName, getSubjectCode(subjectName));
-                    } else {
-                        throw new IllegalArgumentException("Invalid subject type: " + subjectType);
-                    }
-
-                    // Create and add grade
-                    Grade newGrade = new Grade(studentId, subject, grade);
-                    gradeManager.addGrade(newGrade);
-
-                    logWriter.println("Row " + rowNumber + ": SUCCESS - " + studentId + ", " + subjectName + ", " + grade);
-                    successfulImports++;
-
-                } catch (Exception e) {
-                    logWriter.println("Row " + rowNumber + ": FAILED - " + e.getMessage());
-                    failedImports++;
-                }
-            }
+            successfulImports = totalRows.get();
 
             logWriter.println();
             logWriter.println("IMPORT SUMMARY");
-            logWriter.println("Total Rows: " + totalRows);
+            logWriter.println("Total Rows Processed: " + (totalRows.get() + failedImports));
             logWriter.println("Successfully Imported: " + successfulImports);
             logWriter.println("Failed: " + failedImports);
+            logWriter.println("Memory Efficient: Yes (streaming)");
             logWriter.println("Completed: " + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
 
-        } catch (IOException | InvalidFileFormatException e) {
+        } catch (IOException e) {
             System.out.println("Error reading file: " + e.getMessage());
             return;
         }
 
         // Display import summary to user
-        System.out.println("\nIMPORT SUMMARY");
-        System.out.println("Total Rows: " + totalRows);
+        System.out.println("\n=== IMPORT SUMMARY ===");
+        System.out.println("Total Rows: " + (totalRows.get() + failedImports));
         System.out.println("Successfully Imported: " + successfulImports);
         System.out.println("Failed: " + failedImports);
-        System.out.println();
-        System.out.println("✓ Import completed!");
+        System.out.println("Method: NIO.2 Streaming (memory efficient)");
+        System.out.println("\n✓ Import completed!");
         System.out.println(successfulImports + " grades added to system");
         System.out.println("See " + logFilename + " for details");
+    }
+
+    private boolean processCSVRow(String line, PrintWriter logWriter, int rowNumber) {
+        String[] parts = line.split(",");
+        if (parts.length != 4) {
+            logWriter.println("Row " + rowNumber + ": Invalid format - expected 4 columns, found " + parts.length);
+            return false;
+        }
+
+        String studentId = parts[0].trim();
+        String subjectName = parts[1].trim();
+        String subjectType = parts[2].trim();
+        String gradeStr = parts[3].trim();
+
+        try {
+            // Validate student ID format
+            ValidationUtils.ValidationResult studentIdResult = ValidationUtils.validateStudentId(studentId);
+            if (!studentIdResult.isValid()) {
+                logWriter.println("Row " + rowNumber + ": FAILED - Invalid student ID format: " + studentId);
+                logWriter.println("  Reason: " + studentIdResult.getErrorMessage());
+                return false;
+            }
+
+            // Validate student exists
+            Student student = studentManager.findStudent(studentId);
+            if (student == null) {
+                throw new StudentNotFoundException(studentId);
+            }
+
+            // Validate grade
+            ValidationUtils.ValidationResult gradeResult = ValidationUtils.validateGrade(gradeStr);
+            if (!gradeResult.isValid()) {
+                logWriter.println("Row " + rowNumber + ": FAILED - Invalid grade: " + gradeStr);
+                logWriter.println("  Reason: " + gradeResult.getErrorMessage());
+                return false;
+            }
+
+            double grade = Double.parseDouble(gradeStr);
+
+            // Additional grade validation
+            if (grade < 0 || grade > 100) {
+                logWriter.println("Row " + rowNumber + ": FAILED - Grade must be between 0 and 100: " + grade);
+                return false;
+            }
+
+            // Validate subject type and create subject
+            Subject subject;
+            if (subjectType.equalsIgnoreCase("Core")) {
+                subject = new CoreSubject(subjectName, getSubjectCode(subjectName));
+            } else if (subjectType.equalsIgnoreCase("Elective")) {
+                subject = new ElectiveSubject(subjectName, getSubjectCode(subjectName));
+            } else {
+                logWriter.println("Row " + rowNumber + ": FAILED - Invalid subject type: " + subjectType);
+                logWriter.println("  Must be 'Core' or 'Elective'");
+                return false;
+            }
+
+            // Create and add grade
+            Grade newGrade = new Grade(studentId, subject, grade);
+            gradeManager.addGrade(newGrade);
+
+            logWriter.println("Row " + rowNumber + ": SUCCESS - " + studentId + ", " + subjectName + ", " + grade);
+            return true;
+
+        } catch (StudentNotFoundException e) {
+            logWriter.println("Row " + rowNumber + ": FAILED - " + e.getMessage());
+            return false;
+        } catch (NumberFormatException e) {
+            logWriter.println("Row " + rowNumber + ": FAILED - Invalid number format for grade: " + gradeStr);
+            return false;
+        } catch (Exception e) {
+            logWriter.println("Row " + rowNumber + ": FAILED - Unexpected error: " + e.getMessage());
+            return false;
+        }
     }
 
     private String getSubjectCode(String subjectName) {
@@ -136,7 +162,7 @@ public class BulkImportService {
             case "music": return "MUS";
             case "art": return "ART";
             case "physical education": return "PE";
-            default: return subjectName.substring(0, 3).toUpperCase();
+            default: return subjectName.substring(0, Math.min(3, subjectName.length())).toUpperCase();
         }
     }
 }

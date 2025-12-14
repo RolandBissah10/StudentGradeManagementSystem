@@ -4,8 +4,8 @@ public class HonorsStudent extends Student {
     private double passingGrade = 60.0;
     private boolean honorsEligible;
 
-    public HonorsStudent(String name, int age, String email, String phone) {
-        super(name, age, email, phone);
+    public HonorsStudent(String name, int age, String email, String phone, String enrollmentDate) {
+        super(name, age, email, phone, enrollmentDate);
         this.honorsEligible = false;
     }
 
@@ -16,6 +16,8 @@ public class HonorsStudent extends Student {
         System.out.println("Type: " + getStudentType());
         System.out.println("Age: " + getAge());
         System.out.println("Email: " + getEmail());
+        System.out.println("Phone: " + getPhone());
+        System.out.println("Enrollment Date: " + getEnrollmentDateString());
         System.out.println("Passing Grade: " + getPassingGrade() + "%");
         System.out.println("Honors Eligible: " + (checkHonorsEligibility() ? "Yes" : "No"));
         System.out.println("Status: " + getStatus());
