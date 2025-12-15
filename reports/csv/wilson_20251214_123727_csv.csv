@@ -1,0 +1,11 @@
+StudentID,Name,Email,Phone,Type,EnrollmentDate,Status
+STU005,"Emma Wilson","emma.wilson@college.org","+1-555-1005",Regular,2024-09-01,Active
+
+GradeID,Subject,Type,Grade,Date,LetterGrade
+GRD029,"Mathematics",Core,99.0,14-12-2025,A
+GRD030,"Computer Science",Core,76.0,14-12-2025,C
+GRD031,"History",Core,90.0,14-12-2025,A-
+GRD032,"Science",Core,89.0,14-12-2025,B+
+GRD033,"English",Core,89.0,14-12-2025,B+
+GRD034,"Physical Education",Elective,96.0,14-12-2025,A
+GRD035,"Physical Education",Elective,51.0,14-12-2025,F

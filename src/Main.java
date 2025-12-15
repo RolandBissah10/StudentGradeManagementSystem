@@ -308,34 +308,34 @@ public class Main {
         displayBackgroundTasks();
 
         System.out.println("\nSTUDENT MANAGEMENT");
-        System.out.println("  1. Add Student (with comprehensive regex validation)");
-        System.out.println("  2. View All Students (optimized collections performance)");
-        System.out.println("  3. Record Grade (with validation)");
-        System.out.println("  4. View Grade Report (with caching)");
+        System.out.println("  1. Add Student");
+        System.out.println("  2. View All Students");
+        System.out.println("  3. Record Grade");
+        System.out.println("  4. View Grade Report");
 
         System.out.println("\nFILE OPERATIONS (NIO.2)");
-        System.out.println("  5. Export Grade Report (CSV/JSON/Binary)");
-        System.out.println("  6. Import Data (Multi-format support)");
-        System.out.println("  7. Bulk Import Grades (Stream processing)");
+        System.out.println("  5. Export Grade Report");
+        System.out.println("  6. Import Data");
+        System.out.println("  7. Bulk Import Grades");
         System.out.println("  8. Start File Watcher Service");
 
         System.out.println("\nANALYTICS & REPORTING");
-        System.out.println("  9. Calculate Student GPA (4.0 scale)");
-        System.out.println("  10. View Class Statistics (with bar charts)");
-        System.out.println("  11. Real-Time Statistics Dashboard [NEW]");
-        System.out.println("  12. Generate Batch Reports (Concurrent)");
+        System.out.println("  9. Calculate Student GPA");
+        System.out.println("  10. View Class Statistics");
+        System.out.println("  11. Real-Time Statistics Dashboard");
+        System.out.println("  12. Generate Batch Reports ");
         System.out.println("  13. Stream Processing Analytics");
 
         System.out.println("\nSEARCH & QUERY");
-        System.out.println("  14. Search Students (Advanced)");
-        System.out.println("  15. Pattern-Based Search (Regex) [NEW]");
+        System.out.println("  14. Search Students");
+        System.out.println("  15. Pattern-Based Search");
         System.out.println("  16. Query Grade History");
 
         System.out.println("\nADVANCED FEATURES");
-        System.out.println("  17. Schedule Automated Tasks [NEW]");
-        System.out.println("  18. View System Performance [NEW]");
-        System.out.println("  19. Cache Management [NEW]");
-        System.out.println("  20. Audit Trail Viewer [NEW]");
+        System.out.println("  17. Schedule Automated Tasks ");
+        System.out.println("  18. View System Performance");
+        System.out.println("  19. Cache Management");
+        System.out.println("  20. Audit Trail Viewer");
         System.out.println("  21. Exit System");
 
         System.out.print("\nEnter choice (1-21): ");
@@ -1009,15 +1009,43 @@ public class Main {
             String scopeChoice = scanner.nextLine();
 
             System.out.println("\nReport Format:");
-            System.out.println("1. CSV Format");
-            System.out.println("2. JSON Format");
-            System.out.println("3. All Formats");
-            System.out.print("Select format (1-3): ");
+            System.out.println("1. PDF Summary Report");
+            System.out.println("2. Detailed Text Report");
+            System.out.println("3. Excel Spreadsheet");
+            System.out.println("4. All Formats (PDF, Text, Excel)");
+            System.out.print("Select format (1-4): ");
 
             String formatChoice = scanner.nextLine();
 
+            // Get the list of students based on scope
+            List<Student> studentsToProcess = new ArrayList<>();
+            switch (scopeChoice) {
+                case "1": // All students
+                    studentsToProcess = studentManager.getStudents();
+                    break;
+                case "2": // Regular students only
+                    studentsToProcess = studentManager.getStudents().stream()
+                            .filter(s -> s instanceof RegularStudent)
+                            .collect(Collectors.toList());
+                    break;
+                case "3": // Honors students only
+                    studentsToProcess = studentManager.getStudents().stream()
+                            .filter(s -> s instanceof HonorsStudent)
+                            .collect(Collectors.toList());
+                    break;
+                default:
+                    System.out.println("Invalid choice! Using all students.");
+                    studentsToProcess = studentManager.getStudents();
+            }
+
+            if (studentsToProcess.isEmpty()) {
+                System.out.println("No students found for the selected scope!");
+                return;
+            }
+
             int availableProcessors = Runtime.getRuntime().availableProcessors();
             System.out.printf("\nAvailable Processors: %d%n", availableProcessors);
+            System.out.printf("Students to Process: %d%n", studentsToProcess.size());
             System.out.printf("Recommended Threads: %d-%d%n",
                     Math.max(2, availableProcessors / 2), availableProcessors);
 
@@ -1031,18 +1059,64 @@ public class Main {
                 threadCount = 4;
             }
 
-            String reportType = "csv";
-            if (formatChoice.equals("2")) reportType = "json";
-            if (formatChoice.equals("3")) reportType = "all";
+            // Determine report types based on format choice
+            List<String> reportTypes = new ArrayList<>();
+            switch (formatChoice) {
+                case "1": // PDF only
+                    reportTypes.add("pdf");
+                    break;
+                case "2": // Text only
+                    reportTypes.add("text");
+                    break;
+                case "3": // Excel only
+                    reportTypes.add("excel");
+                    break;
+                case "4": // All formats
+                    reportTypes.add("pdf");
+                    reportTypes.add("text");
+                    reportTypes.add("excel");
+                    break;
+                default:
+                    System.out.println("Invalid choice! Using all formats.");
+                    reportTypes.add("pdf");
+                    reportTypes.add("text");
+                    reportTypes.add("excel");
+            }
+
+            System.out.println("\n" + "=".repeat(80));
+            System.out.println("BATCH REPORT CONFIGURATION");
+            System.out.println("=".repeat(80));
+            System.out.printf("Scope: %s (%d students)%n",
+                    scopeChoice.equals("1") ? "All Students" :
+                            scopeChoice.equals("2") ? "Regular Only" : "Honors Only",
+                    studentsToProcess.size());
+            System.out.printf("Formats: %s%n", String.join(", ", reportTypes));
+            System.out.printf("Threads: %d%n", threadCount);
+            System.out.printf("Total Reports: %d%n", studentsToProcess.size() * reportTypes.size());
+            System.out.println("=".repeat(80));
+
+            System.out.print("\nProceed with report generation? (Y/N): ");
+            String confirm = scanner.nextLine();
+            if (!confirm.equalsIgnoreCase("Y")) {
+                System.out.println("Report generation cancelled.");
+                return;
+            }
 
             auditLogger.logSimple("BATCH_REPORTS",
-                    String.format("Starting batch reports: %d threads, type: %s",
-                            threadCount, reportType), null);
+                    String.format("Starting batch reports: %d students, %d threads, formats: %s",
+                            studentsToProcess.size(), threadCount, String.join(",", reportTypes)), null);
 
-            taskService.generateBatchReports(threadCount, reportType);
+            System.out.println("\n" + "═".repeat(80));
+            System.out.println("🚀 STARTING BATCH REPORT GENERATION");
+            System.out.println("═".repeat(80));
+
+            // Create and start batch report service
+            BatchReportService batchService = new BatchReportService(studentManager, gradeManager, reportGenerator);
+            batchService.generateConcurrentReports(studentsToProcess, reportTypes, threadCount);
 
         } catch (Exception e) {
             System.err.println("Error generating batch reports: " + e.getMessage());
+            e.printStackTrace();
             auditLogger.logError("BATCH_REPORTS", "Failed to generate batch reports", e.getMessage(), null);
         }
     }
