@@ -198,6 +198,337 @@ public class ReportGenerator implements Exportable {
         }
     }
 
+    // ============================
+    // NEW METHODS FOR BATCH REPORTS
+    // ============================
+
+    // 1. PDF Summary Report (text-based simulation)
+    public void exportPdfSummary(String studentId, String filename) throws ExportException {
+        ensureReportsDirectory("pdf");
+        Path filePath = Paths.get("reports/pdf", filename + "_summary.pdf");
+
+        try (BufferedWriter writer = Files.newBufferedWriter(filePath,
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+
+            Student student = studentManager.findStudent(studentId);
+            if (student == null) {
+                throw new ExportException("Student not found: " + studentId);
+            }
+
+            // PDF-like header with borders
+            writer.write("╔════════════════════════════════════════════════════════════╗");
+            writer.newLine();
+            writer.write("║                    ACADEMIC REPORT SUMMARY                 ║");
+            writer.newLine();
+            writer.write("╠════════════════════════════════════════════════════════════╣");
+            writer.newLine();
+            writer.write("║ Generated: " + LocalDateTime.now().format(TIMESTAMP_FORMATTER) +
+                    " ".repeat(40 - LocalDateTime.now().format(TIMESTAMP_FORMATTER).length()) + "║");
+            writer.newLine();
+            writer.write("╚════════════════════════════════════════════════════════════╝");
+            writer.newLine();
+            writer.newLine();
+
+            // Student Information in table format
+            writer.write("┌────────────────────┬───────────────────────────────────────┐");
+            writer.newLine();
+            writer.write(String.format("│ %-18s │ %-37s │", "Student ID:", student.getStudentId()));
+            writer.newLine();
+            writer.write("├────────────────────┼───────────────────────────────────────┤");
+            writer.newLine();
+            writer.write(String.format("│ %-18s │ %-37s │", "Name:", student.getName()));
+            writer.newLine();
+            writer.write(String.format("│ %-18s │ %-37s │", "Student Type:", student.getStudentType()));
+            writer.newLine();
+            writer.write(String.format("│ %-18s │ %-37s │", "Enrollment Date:", student.getEnrollmentDateString()));
+            writer.newLine();
+            writer.write(String.format("│ %-18s │ %-37s │", "Status:", student.getStatus()));
+            writer.newLine();
+            writer.write("└────────────────────┴───────────────────────────────────────┘");
+            writer.newLine();
+            writer.newLine();
+
+            // Performance Summary
+            double overallAvg = gradeManager.calculateOverallAverage(studentId);
+            double coreAvg = gradeManager.calculateCoreAverage(studentId);
+            double electiveAvg = gradeManager.calculateElectiveAverage(studentId);
+
+            writer.write("┌────────────────────────────────────────────────────────────┐");
+            writer.newLine();
+            writer.write("│                    PERFORMANCE SUMMARY                     │");
+            writer.newLine();
+            writer.write("├────────────────────────────────────────────────────────────┤");
+            writer.newLine();
+            writer.write(String.format("│ %-30s │ %-25s │", "Overall Average:", String.format("%.1f%%", overallAvg)));
+            writer.newLine();
+            writer.write(String.format("│ %-30s │ %-25s │", "Core Subjects Average:", String.format("%.1f%%", coreAvg)));
+            writer.newLine();
+            writer.write(String.format("│ %-30s │ %-25s │", "Elective Subjects Average:", String.format("%.1f%%", electiveAvg)));
+            writer.newLine();
+            writer.write(String.format("│ %-30s │ %-25s │", "Passing Grade Required:", student.getPassingGrade() + "%"));
+            writer.newLine();
+            writer.write(String.format("│ %-30s │ %-25s │", "Passing Status:",
+                    overallAvg >= student.getPassingGrade() ? "✓ PASSING" : "✗ FAILING"));
+            writer.newLine();
+
+            if (student instanceof HonorsStudent) {
+                HonorsStudent honorsStudent = (HonorsStudent) student;
+                writer.write(String.format("│ %-30s │ %-25s │", "Honors Eligible:",
+                        honorsStudent.checkHonorsEligibility() ? "✓ ELIGIBLE" : "✗ NOT ELIGIBLE"));
+                writer.newLine();
+            }
+
+            writer.write("└────────────────────────────────────────────────────────────┘");
+            writer.newLine();
+            writer.newLine();
+
+            // Grade Distribution Chart
+            List<Grade> grades = gradeManager.getGradesByStudent(studentId);
+            Map<String, Long> distribution = getGradeDistribution(grades);
+
+            writer.write("GRADE DISTRIBUTION:");
+            writer.newLine();
+            writer.write("┌──────────────┬──────────────────────┬─────────┐");
+            writer.newLine();
+
+            String[] categories = {"A (90-100)", "B (80-89)", "C (70-79)", "D (60-69)", "F (0-59)"};
+            for (String category : categories) {
+                long count = distribution.getOrDefault(category, 0L);
+                double percentage = grades.size() > 0 ? (count * 100.0) / grades.size() : 0;
+                int barLength = (int) (percentage / 2); // Scale for display
+
+                writer.write(String.format("│ %-12s │ %-20s │ %6.1f%% │",
+                        category,
+                        "█".repeat(barLength) + "░".repeat(20 - barLength),
+                        percentage));
+                writer.newLine();
+            }
+            writer.write("└──────────────┴──────────────────────┴─────────┘");
+            writer.newLine();
+            writer.newLine();
+
+            // Footer
+            writer.write("══════════════════════════════════════════════════════════════");
+            writer.newLine();
+            writer.write("Official Academic Record - " + student.getName());
+            writer.newLine();
+            writer.write("Total Grades: " + grades.size() + " | Generated: " +
+                    LocalDateTime.now().format(TIMESTAMP_FORMATTER));
+            writer.newLine();
+
+            System.out.println("✓ PDF Summary exported: " + filePath.getFileName());
+            System.out.println("  Format: PDF (Text Simulation)");
+            System.out.println("  Size: " + Files.size(filePath) + " bytes");
+
+        } catch (IOException e) {
+            throw new ExportException("PDF export failed: " + e.getMessage());
+        }
+    }
+
+    // 2. Excel Spreadsheet (CSV format for Excel)
+    public void exportExcelSpreadsheet(String studentId, String filename) throws ExportException {
+        ensureReportsDirectory("excel");
+        Path filePath = Paths.get("reports/excel", filename + ".csv");
+
+        try (BufferedWriter writer = Files.newBufferedWriter(filePath,
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+
+            Student student = studentManager.findStudent(studentId);
+            if (student == null) {
+                throw new ExportException("Student not found: " + studentId);
+            }
+
+            List<Grade> grades = gradeManager.getGradesByStudent(studentId);
+
+            // Excel-friendly CSV with UTF-8 BOM for Excel compatibility
+            writer.write("\uFEFF"); // UTF-8 BOM for Excel
+            writer.newLine();
+
+            // Student Information Sheet
+            writer.write("STUDENT INFORMATION");
+            writer.newLine();
+            writer.write("Field,Value");
+            writer.newLine();
+            writer.write("Student ID," + student.getStudentId());
+            writer.newLine();
+            writer.write("Name,\"" + escapeCSV(student.getName()) + "\"");
+            writer.newLine();
+            writer.write("Email,\"" + escapeCSV(student.getEmail()) + "\"");
+            writer.newLine();
+            writer.write("Phone,\"" + escapeCSV(student.getPhone()) + "\"");
+            writer.newLine();
+            writer.write("Student Type," + student.getStudentType());
+            writer.newLine();
+            writer.write("Enrollment Date," + student.getEnrollmentDateString());
+            writer.newLine();
+            writer.write("Status," + student.getStatus());
+            writer.newLine();
+            writer.write("Passing Grade," + student.getPassingGrade());
+            writer.newLine();
+            writer.write("Overall Average," + String.format("%.2f", gradeManager.calculateOverallAverage(studentId)));
+            writer.newLine();
+            writer.newLine();
+
+            // Grades Sheet
+            writer.write("GRADE DETAILS");
+            writer.newLine();
+            writer.write("GradeID,StudentID,Subject,SubjectType,Grade,LetterGrade,Date,Timestamp");
+            writer.newLine();
+
+            for (Grade grade : grades) {
+                writer.write(String.format("%s,%s,\"%s\",%s,%.2f,%s,%s,%s",
+                        grade.getGradeId(),
+                        grade.getStudentId(),
+                        escapeCSV(grade.getSubject().getSubjectName()),
+                        grade.getSubject().getSubjectType(),
+                        grade.getGrade(),
+                        grade.getLetterGrade(),
+                        grade.getDate(),
+                        grade.getTimestampString()));
+                writer.newLine();
+            }
+            writer.newLine();
+
+            // Statistics Sheet
+            writer.write("STATISTICS");
+            writer.newLine();
+            writer.write("Metric,Value");
+            writer.newLine();
+            writer.write("Total Grades," + grades.size());
+            writer.newLine();
+            writer.write("Overall Average," + String.format("%.2f", gradeManager.calculateOverallAverage(studentId)));
+            writer.newLine();
+            writer.write("Core Subjects Average," + String.format("%.2f", gradeManager.calculateCoreAverage(studentId)));
+            writer.newLine();
+            writer.write("Elective Subjects Average," + String.format("%.2f", gradeManager.calculateElectiveAverage(studentId)));
+            writer.newLine();
+
+            // Grade Distribution
+            Map<String, Long> distribution = getGradeDistribution(grades);
+            writer.newLine();
+            writer.write("GRADE DISTRIBUTION");
+            writer.newLine();
+            writer.write("Grade Range,Count,Percentage");
+            writer.newLine();
+
+            for (Map.Entry<String, Long> entry : distribution.entrySet()) {
+                double percentage = grades.size() > 0 ? (entry.getValue() * 100.0) / grades.size() : 0;
+                writer.write(String.format("%s,%d,%.2f%%",
+                        entry.getKey(),
+                        entry.getValue(),
+                        percentage));
+                writer.newLine();
+            }
+            writer.newLine();
+
+            // Performance Indicators
+            writer.write("PERFORMANCE INDICATORS");
+            writer.newLine();
+            writer.write("Indicator,Value,Status");
+            writer.newLine();
+
+            double overallAvg = gradeManager.calculateOverallAverage(studentId);
+            writer.write(String.format("Passing Status,%.2f,%s",
+                    overallAvg,
+                    overallAvg >= student.getPassingGrade() ? "PASS" : "FAIL"));
+            writer.newLine();
+
+            if (student instanceof HonorsStudent) {
+                HonorsStudent honorsStudent = (HonorsStudent) student;
+                writer.write(String.format("Honors Eligibility,%.2f,%s",
+                        overallAvg,
+                        honorsStudent.checkHonorsEligibility() ? "ELIGIBLE" : "NOT ELIGIBLE"));
+                writer.newLine();
+            }
+
+            System.out.println("✓ Excel Spreadsheet exported: " + filePath.getFileName());
+            System.out.println("  Format: CSV (Excel Compatible)");
+            System.out.println("  Sheets: Student Info, Grades, Statistics, Distribution, Performance");
+            System.out.println("  Size: " + Files.size(filePath) + " bytes");
+
+        } catch (IOException e) {
+            throw new ExportException("Excel export failed: " + e.getMessage());
+        }
+    }
+
+    // 3. Batch Report Generation (All 3 formats)
+    public void generateBatchReport(String studentId, String baseFilename) throws ExportException {
+        String timestamp = LocalDateTime.now().format(FILENAME_FORMATTER);
+        String filename = baseFilename + "_" + studentId + "_" + timestamp;
+
+        System.out.println("\n=== BATCH REPORT GENERATION ===");
+        System.out.println("Student: " + studentId);
+        System.out.println("Formats: PDF Summary, Detailed Text, Excel Spreadsheet");
+        System.out.println("Timestamp: " + timestamp);
+
+        // Generate all three formats
+        try {
+            System.out.println("\n1. Generating PDF Summary...");
+            exportPdfSummary(studentId, filename);
+
+            System.out.println("2. Generating Detailed Text Report...");
+            exportDetailedReport(studentId, filename);
+
+            System.out.println("3. Generating Excel Spreadsheet...");
+            exportExcelSpreadsheet(studentId, filename);
+
+            System.out.println("\n✅ BATCH REPORT GENERATION COMPLETE");
+            System.out.println("All 3 formats generated successfully:");
+            System.out.println("  - PDF Summary:     reports/pdf/" + filename + "_summary.pdf");
+            System.out.println("  - Detailed Text:   reports/text/" + filename + "_detailed.txt");
+            System.out.println("  - Excel Spreadsheet: reports/excel/" + filename + ".csv");
+
+        } catch (ExportException e) {
+            throw new ExportException("Batch report generation failed: " + e.getMessage());
+        }
+    }
+
+    // 4. Class-wide Batch Reports (All students)
+    public void generateClassBatchReports() throws ExportException {
+        List<Student> allStudents = studentManager.getStudents();
+        String timestamp = LocalDateTime.now().format(FILENAME_FORMATTER);
+
+        System.out.println("\n=== CLASS-WIDE BATCH REPORT GENERATION ===");
+        System.out.println("Total Students: " + allStudents.size());
+        System.out.println("Timestamp: " + timestamp);
+        System.out.println("=".repeat(50));
+
+        int successCount = 0;
+        int failCount = 0;
+
+        for (Student student : allStudents) {
+            try {
+                System.out.print("\nProcessing " + student.getStudentId() + " - " +
+                        truncate(student.getName(), 20) + "... ");
+
+                generateBatchReport(student.getStudentId(),
+                        "class_report_" + timestamp);
+
+                System.out.println("✓ Done");
+                successCount++;
+
+            } catch (ExportException e) {
+                System.out.println("✗ Failed: " + e.getMessage());
+                failCount++;
+            }
+        }
+
+        System.out.println("\n" + "=".repeat(50));
+        System.out.println("CLASS BATCH REPORT SUMMARY");
+        System.out.println("Successful: " + successCount + " students");
+        System.out.println("Failed: " + failCount + " students");
+        System.out.println("Total Reports Generated: " + (successCount * 3));
+        System.out.println("Location: reports/{pdf,text,excel}/");
+
+        if (failCount > 0) {
+            throw new ExportException(failCount + " students failed to generate reports");
+        }
+    }
+
+    // ============================
+    // EXISTING METHODS (keep these)
+    // ============================
+
     private Map<String, Long> getGradeDistribution(List<Grade> grades) {
         return grades.stream()
                 .collect(Collectors.groupingBy(
@@ -215,47 +546,26 @@ public class ReportGenerator implements Exportable {
 
     @Override
     public void exportSearchResults(List<Student> students, String filename) throws ExportException {
-        ensureReportsDirectory();
-        Path filePath = Paths.get("reports/text", filename + "_search.txt");
+        ensureReportsDirectory("search");
+        Path filePath = Paths.get("reports/search", filename + ".txt");
 
-        try (BufferedWriter writer = Files.newBufferedWriter(filePath,
-                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
-
+        try (BufferedWriter writer = Files.newBufferedWriter(filePath)) {
             writer.write("STUDENT SEARCH RESULTS");
             writer.newLine();
             writer.write("Generated: " + LocalDateTime.now().format(TIMESTAMP_FORMATTER));
             writer.newLine();
-            writer.write("=========================================");
+            writer.write("Students Found: " + students.size());
             writer.newLine();
-            writer.newLine();
-            writer.write(String.format("%-8s | %-20s | %-10s | %-25s | %-15s | %s%n",
-                    "ID", "NAME", "TYPE", "EMAIL", "PHONE", "AVERAGE"));
-            writer.write("---------------------------------------------------------------------------");
             writer.newLine();
 
             for (Student student : students) {
-                double avg = gradeManager.calculateOverallAverage(student.getStudentId());
-                writer.write(String.format("%-8s | %-20s | %-10s | %-25s | %-15s | %6.1f%%%n",
-                        student.getStudentId(),
-                        truncate(student.getName(), 20),
-                        student.getStudentType(),
-                        truncate(student.getEmail(), 25),
-                        truncate(student.getPhone(), 15),
-                        avg));
+                writer.write(student.getStudentId() + " - " + student.getName() +
+                        " (" + student.getStudentType() + ")");
+                writer.newLine();
             }
 
-            writer.newLine();
-            writer.write("Total students found: " + students.size());
-            writer.newLine();
-            writer.write("Export format: Plain text (UTF-8)");
-            writer.newLine();
-            writer.write("Generated with NIO.2 API");
-
-            System.out.println("✓ Search results exported: " + filePath.getFileName());
-            System.out.println("  Students: " + students.size() + " | File size: " + Files.size(filePath) + " bytes");
-
         } catch (IOException e) {
-            throw new ExportException("Cannot write to file: " + e.getMessage());
+            throw new ExportException("Search results export failed: " + e.getMessage());
         }
     }
 
@@ -445,7 +755,10 @@ public class ReportGenerator implements Exportable {
         }
     }
 
-    // Helper methods
+    // ============================
+    // HELPER METHODS
+    // ============================
+
     private void ensureReportsDirectory() {
         ensureReportsDirectory("text");
     }
