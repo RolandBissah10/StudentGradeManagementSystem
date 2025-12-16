@@ -1,0 +1,39 @@
+﻿
+STUDENT INFORMATION
+Field,Value
+Student ID,STU003
+Name,"Sarah Brown"
+Email,"sarah.brown@school.net"
+Phone,"+1-555-1003"
+Student Type,Regular
+Enrollment Date,2024-09-01
+Status,Active
+Passing Grade,50.0
+Overall Average,75.43
+
+GRADE DETAILS
+GradeID,StudentID,Subject,SubjectType,Grade,LetterGrade,Date,Timestamp
+GRD015,STU003,"Mathematics",Core,97.00,A,16-12-2025,2025-12-16 08:23:10
+GRD016,STU003,"History",Core,60.00,D,16-12-2025,2025-12-16 08:23:10
+GRD017,STU003,"English",Core,60.00,D,16-12-2025,2025-12-16 08:23:10
+GRD018,STU003,"History",Core,79.00,C+,16-12-2025,2025-12-16 08:23:10
+GRD019,STU003,"Physical Education",Elective,69.00,D+,16-12-2025,2025-12-16 08:23:10
+GRD020,STU003,"Art",Elective,94.00,A,16-12-2025,2025-12-16 08:23:10
+GRD021,STU003,"Drama",Elective,69.00,D+,16-12-2025,2025-12-16 08:23:10
+
+STATISTICS
+Metric,Value
+Total Grades,7
+Overall Average,75.43
+Core Subjects Average,74.00
+Elective Subjects Average,77.33
+
+GRADE DISTRIBUTION
+Grade Range,Count,Percentage
+C (70-79),1,14.29%
+D (60-69),4,57.14%
+A (90-100),2,28.57%
+
+PERFORMANCE INDICATORS
+Indicator,Value,Status
+Passing Status,75.43,PASS

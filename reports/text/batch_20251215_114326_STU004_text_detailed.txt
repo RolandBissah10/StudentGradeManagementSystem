@@ -1,0 +1,39 @@
+DETAILED GRADE REPORT
+Generated: 2025-12-15 11:43:26
+=========================================
+
+STUDENT INFORMATION
+ID: STU004
+Name: David Lee
+Type: Regular
+Age: 17
+Email: david.lee@university.edu
+Phone: +1-555-1004
+Enrollment Date: 2024-09-01
+Passing Grade: 50.0%
+Status: Active
+
+GRADE HISTORY
+---------------------------------------------------
+GRD ID   | DATE       | SUBJECT         | TYPE     | GRADE   | LETTER
+---------------------------------------------------
+GRD028   | 15-12-2025 | Economics       | Elective |   97.0% | A    
+GRD027   | 15-12-2025 | Economics       | Elective |   94.0% | A    
+GRD026   | 15-12-2025 | Physical Edu... | Elective |   57.0% | F    
+GRD024   | 15-12-2025 | English         | Core     |   80.0% | B-   
+GRD025   | 15-12-2025 | History         | Core     |   60.0% | D    
+GRD022   | 15-12-2025 | Mathematics     | Core     |   81.0% | B-   
+GRD023   | 15-12-2025 | Computer Sci... | Core     |   73.0% | C    
+
+STATISTICS
+Total Grades: 7
+Overall Average: 77.4%
+Core Subjects Average: 73.5%
+Elective Subjects Average: 82.7%
+
+GRADE DISTRIBUTION
+B (80-89): 2 grades
+C (70-79): 1 grades
+D (60-69): 1 grades
+A (90-100): 2 grades
+F (0-59): 1 grades

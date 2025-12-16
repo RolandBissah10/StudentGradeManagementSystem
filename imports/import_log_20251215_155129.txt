@@ -1,0 +1,26 @@
+BULK IMPORT LOG
+Timestamp: 2025-12-15 15:51:29
+Source File: sample_grades.csv
+=========================================
+
+Row 1: SUCCESS - STU001, Mathematics (Core), 85.0%
+Row 2: SUCCESS - STU002, English (Core), 92.0%
+Row 3: SUCCESS - STU003, Music (Elective), 28.0%
+Row 4: SUCCESS - STU004, Science (Core), 88.0%
+Row 5: SUCCESS - STU005, Art (Elective), 95.0%
+Row 6: SUCCESS - STU006, Mathematics (Core), 78.0%
+Row 7: SUCCESS - STU007, English (Core), 65.0%
+Row 8: SUCCESS - STU008, Physical Education (Elective), 82.0%
+Row 9: SUCCESS - STU009, Science (Core), 91.0%
+Row 10: SUCCESS - STU010, Music (Elective), 74.0%
+Row 11: FAILED - Student not found: STU211
+  Available students: STU001, STU002, STU003, STU004, STU005, STU006, STU007, STU008, STU009, STU010
+Row 12: FAILED - Student not found: STU123
+  Available students: STU001, STU002, STU003, STU004, STU005, STU006, STU007, STU008, STU009, STU010
+
+=== IMPORT SUMMARY ===
+Total Rows Processed: 12
+Successfully Imported: 10
+Failed: 2
+Success Rate: 83.3%
+Completed: 2025-12-15 15:51:29

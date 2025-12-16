@@ -1,0 +1,40 @@
+﻿
+STUDENT INFORMATION
+Field,Value
+Student ID,STU001
+Name,"Alice Johnson"
+Email,"alice.johnson@university.edu"
+Phone,"+1-555-1001"
+Student Type,Regular
+Enrollment Date,2024-09-01
+Status,Active
+Passing Grade,50.0
+Overall Average,80.63
+
+GRADE DETAILS
+GradeID,StudentID,Subject,SubjectType,Grade,LetterGrade,Date,Timestamp
+GRD001,STU001,"History",Core,68.00,D+,15-12-2025,2025-12-15 09:45:08
+GRD002,STU001,"Mathematics",Core,65.00,D,15-12-2025,2025-12-15 09:45:08
+GRD003,STU001,"History",Core,99.00,A,15-12-2025,2025-12-15 09:45:08
+GRD004,STU001,"Science",Core,82.00,B-,15-12-2025,2025-12-15 09:45:08
+GRD005,STU001,"Art",Elective,82.00,B-,15-12-2025,2025-12-15 09:45:08
+GRD006,STU001,"Music",Elective,93.00,A,15-12-2025,2025-12-15 09:45:08
+GRD007,STU001,"Music",Elective,63.00,D,15-12-2025,2025-12-15 09:45:08
+GRD008,STU001,"Drama",Elective,93.00,A,15-12-2025,2025-12-15 09:45:08
+
+STATISTICS
+Metric,Value
+Total Grades,8
+Overall Average,80.63
+Core Subjects Average,78.50
+Elective Subjects Average,82.75
+
+GRADE DISTRIBUTION
+Grade Range,Count,Percentage
+B (80-89),2,25.00%
+D (60-69),3,37.50%
+A (90-100),3,37.50%
+
+PERFORMANCE INDICATORS
+Indicator,Value,Status
+Passing Status,80.63,PASS

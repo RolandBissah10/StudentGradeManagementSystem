@@ -1,0 +1,38 @@
+DETAILED GRADE REPORT
+Generated: 2025-12-15 16:31:24
+=========================================
+
+STUDENT INFORMATION
+ID: STU008
+Name: James Anderson
+Type: Honors
+Age: 17
+Email: james.anderson@school.net
+Phone: +1-555-2003
+Enrollment Date: 2024-09-01
+Passing Grade: 60.0%
+Status: Active
+
+GRADE HISTORY
+---------------------------------------------------
+GRD ID   | DATE       | SUBJECT         | TYPE     | GRADE   | LETTER
+---------------------------------------------------
+GRD056   | 15-12-2025 | Economics       | Elective |   60.0% | D    
+GRD055   | 15-12-2025 | Economics       | Elective |   92.0% | A-   
+GRD054   | 15-12-2025 | Art             | Elective |   62.0% | D    
+GRD053   | 15-12-2025 | Computer Sci... | Core     |   81.0% | B-   
+GRD052   | 15-12-2025 | Computer Sci... | Core     |   71.0% | C-   
+GRD051   | 15-12-2025 | Mathematics     | Core     |   90.0% | A-   
+GRD050   | 15-12-2025 | Mathematics     | Core     |   70.0% | C-   
+
+STATISTICS
+Total Grades: 7
+Overall Average: 75.1%
+Core Subjects Average: 78.0%
+Elective Subjects Average: 71.3%
+
+GRADE DISTRIBUTION
+B (80-89): 1 grades
+C (70-79): 2 grades
+D (60-69): 2 grades
+A (90-100): 2 grades

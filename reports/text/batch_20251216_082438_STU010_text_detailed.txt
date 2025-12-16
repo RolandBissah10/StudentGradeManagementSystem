@@ -1,0 +1,38 @@
+DETAILED GRADE REPORT
+Generated: 2025-12-16 08:24:38
+=========================================
+
+STUDENT INFORMATION
+ID: STU010
+Name: Lucas White
+Type: Honors
+Age: 17
+Email: lucas.white@college.org
+Phone: +1-555-2005
+Enrollment Date: 2024-09-01
+Passing Grade: 60.0%
+Status: Active
+
+GRADE HISTORY
+---------------------------------------------------
+GRD ID   | DATE       | SUBJECT         | TYPE     | GRADE   | LETTER
+---------------------------------------------------
+GRD069   | 16-12-2025 | Drama           | Elective |   53.0% | F    
+GRD070   | 16-12-2025 | Drama           | Elective |   74.0% | C    
+GRD067   | 16-12-2025 | English         | Core     |   83.0% | B    
+GRD068   | 16-12-2025 | Art             | Elective |   61.0% | D    
+GRD064   | 16-12-2025 | Computer Sci... | Core     |   80.0% | B-   
+GRD065   | 16-12-2025 | History         | Core     |   68.0% | D+   
+GRD066   | 16-12-2025 | Computer Sci... | Core     |   85.0% | B    
+
+STATISTICS
+Total Grades: 7
+Overall Average: 72.0%
+Core Subjects Average: 79.0%
+Elective Subjects Average: 62.7%
+
+GRADE DISTRIBUTION
+B (80-89): 3 grades
+C (70-79): 1 grades
+D (60-69): 2 grades
+F (0-59): 1 grades
