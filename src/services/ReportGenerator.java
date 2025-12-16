@@ -3,12 +3,18 @@ package services;
 import exceptions.ExportException;
 import interfaces.Exportable;
 import models.*;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
 
 import java.io.*;
 import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 public class ReportGenerator implements Exportable {
@@ -203,125 +209,90 @@ public class ReportGenerator implements Exportable {
     // ============================
 
     // 1. PDF Summary Report (text-based simulation)
+    // Cleaner version with helper method
     public void exportPdfSummary(String studentId, String filename) throws ExportException {
         ensureReportsDirectory("pdf");
         Path filePath = Paths.get("reports/pdf", filename + "_summary.pdf");
 
-        try (BufferedWriter writer = Files.newBufferedWriter(filePath,
-                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+        try (PDDocument document = new PDDocument()) {
+            PDPage page = new PDPage(PDRectangle.A4);
+            document.addPage(page);
 
             Student student = studentManager.findStudent(studentId);
             if (student == null) {
                 throw new ExportException("Student not found: " + studentId);
             }
 
-            // PDF-like header with borders
-            writer.write("╔════════════════════════════════════════════════════════════╗");
-            writer.newLine();
-            writer.write("║                    ACADEMIC REPORT SUMMARY                 ║");
-            writer.newLine();
-            writer.write("╠════════════════════════════════════════════════════════════╣");
-            writer.newLine();
-            writer.write("║ Generated: " + LocalDateTime.now().format(TIMESTAMP_FORMATTER) +
-                    " ".repeat(40 - LocalDateTime.now().format(TIMESTAMP_FORMATTER).length()) + "║");
-            writer.newLine();
-            writer.write("╚════════════════════════════════════════════════════════════╝");
-            writer.newLine();
-            writer.newLine();
+            try (PDPageContentStream cs = new PDPageContentStream(document, page)) {
+                float margin = 50;
+                final float[] y = {750};
 
-            // Student Information in table format
-            writer.write("┌────────────────────┬───────────────────────────────────────┐");
-            writer.newLine();
-            writer.write(String.format("│ %-18s │ %-37s │", "Student ID:", student.getStudentId()));
-            writer.newLine();
-            writer.write("├────────────────────┼───────────────────────────────────────┤");
-            writer.newLine();
-            writer.write(String.format("│ %-18s │ %-37s │", "Name:", student.getName()));
-            writer.newLine();
-            writer.write(String.format("│ %-18s │ %-37s │", "Student Type:", student.getStudentType()));
-            writer.newLine();
-            writer.write(String.format("│ %-18s │ %-37s │", "Enrollment Date:", student.getEnrollmentDateString()));
-            writer.newLine();
-            writer.write(String.format("│ %-18s │ %-37s │", "Status:", student.getStatus()));
-            writer.newLine();
-            writer.write("└────────────────────┴───────────────────────────────────────┘");
-            writer.newLine();
-            writer.newLine();
+                // Helper function to add text with automatic endText()
+                BiConsumer<String, Float> addText = (text, fontSize) -> {
+                    try {
+                        cs.beginText();
+                        cs.setFont(PDType1Font.HELVETICA, fontSize);
+                        cs.newLineAtOffset(margin, y[0]);
+                        cs.showText(text);
+                        cs.endText();
+                        y[0] -= (fontSize + 5);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                };
 
-            // Performance Summary
-            double overallAvg = gradeManager.calculateOverallAverage(studentId);
-            double coreAvg = gradeManager.calculateCoreAverage(studentId);
-            double electiveAvg = gradeManager.calculateElectiveAverage(studentId);
+                // Title
+                cs.beginText();
+                cs.setFont(PDType1Font.HELVETICA_BOLD, 20);
+                cs.newLineAtOffset(margin, y[0]);
+                cs.showText("STUDENT GRADE REPORT");
+                cs.endText();
+                y[0] -= 40;
 
-            writer.write("┌────────────────────────────────────────────────────────────┐");
-            writer.newLine();
-            writer.write("│                    PERFORMANCE SUMMARY                     │");
-            writer.newLine();
-            writer.write("├────────────────────────────────────────────────────────────┤");
-            writer.newLine();
-            writer.write(String.format("│ %-30s │ %-25s │", "Overall Average:", String.format("%.1f%%", overallAvg)));
-            writer.newLine();
-            writer.write(String.format("│ %-30s │ %-25s │", "Core Subjects Average:", String.format("%.1f%%", coreAvg)));
-            writer.newLine();
-            writer.write(String.format("│ %-30s │ %-25s │", "Elective Subjects Average:", String.format("%.1f%%", electiveAvg)));
-            writer.newLine();
-            writer.write(String.format("│ %-30s │ %-25s │", "Passing Grade Required:", student.getPassingGrade() + "%"));
-            writer.newLine();
-            writer.write(String.format("│ %-30s │ %-25s │", "Passing Status:",
-                    overallAvg >= student.getPassingGrade() ? "✓ PASSING" : "✗ FAILING"));
-            writer.newLine();
+                // Student Info
+                addText.accept("Student ID: " + student.getStudentId(), 12f);
+                addText.accept("Name: " + student.getName(), 12f);
+                addText.accept("Type: " + student.getStudentType(), 12f);
+                addText.accept("Email: " + student.getEmail(), 12f);
+                y[0] -= 20;
 
-            if (student instanceof HonorsStudent) {
-                HonorsStudent honorsStudent = (HonorsStudent) student;
-                writer.write(String.format("│ %-30s │ %-25s │", "Honors Eligible:",
-                        honorsStudent.checkHonorsEligibility() ? "✓ ELIGIBLE" : "✗ NOT ELIGIBLE"));
-                writer.newLine();
+                // Performance
+                double overallAvg = gradeManager.calculateOverallAverage(studentId);
+                cs.beginText();
+                cs.setFont(PDType1Font.HELVETICA_BOLD, 14);
+                cs.newLineAtOffset(margin, y[0]);
+                cs.showText("PERFORMANCE");
+                cs.endText();
+                y[0] -= 25;
+
+                addText.accept(String.format("Overall Average: %.1f%%", overallAvg), 12f);
+                addText.accept("Status: " + (overallAvg >= student.getPassingGrade() ?
+                        "PASSING" : "FAILING"), 12f);
+
+                // Footer
+                cs.beginText();
+                cs.setFont(PDType1Font.HELVETICA_OBLIQUE, 10);
+                cs.newLineAtOffset(margin, 40);
+                cs.showText("Generated: " + LocalDateTime.now().format(TIMESTAMP_FORMATTER));
+                cs.endText();
             }
 
-            writer.write("└────────────────────────────────────────────────────────────┘");
-            writer.newLine();
-            writer.newLine();
+            document.save(filePath.toFile());
+            System.out.println("✓ PDF exported: " + filePath.getFileName());
 
-            // Grade Distribution Chart
-            List<Grade> grades = gradeManager.getGradesByStudent(studentId);
-            Map<String, Long> distribution = getGradeDistribution(grades);
-
-            writer.write("GRADE DISTRIBUTION:");
-            writer.newLine();
-            writer.write("┌──────────────┬──────────────────────┬─────────┐");
-            writer.newLine();
-
-            String[] categories = {"A (90-100)", "B (80-89)", "C (70-79)", "D (60-69)", "F (0-59)"};
-            for (String category : categories) {
-                long count = distribution.getOrDefault(category, 0L);
-                double percentage = grades.size() > 0 ? (count * 100.0) / grades.size() : 0;
-                int barLength = (int) (percentage / 2); // Scale for display
-
-                writer.write(String.format("│ %-12s │ %-20s │ %6.1f%% │",
-                        category,
-                        "█".repeat(barLength) + "░".repeat(20 - barLength),
-                        percentage));
-                writer.newLine();
-            }
-            writer.write("└──────────────┴──────────────────────┴─────────┘");
-            writer.newLine();
-            writer.newLine();
-
-            // Footer
-            writer.write("══════════════════════════════════════════════════════════════");
-            writer.newLine();
-            writer.write("Official Academic Record - " + student.getName());
-            writer.newLine();
-            writer.write("Total Grades: " + grades.size() + " | Generated: " +
-                    LocalDateTime.now().format(TIMESTAMP_FORMATTER));
-            writer.newLine();
-
-            System.out.println("✓ PDF Summary exported: " + filePath.getFileName());
-            System.out.println("  Format: PDF (Text Simulation)");
-            System.out.println("  Size: " + Files.size(filePath) + " bytes");
-
-        } catch (IOException e) {
+        } catch (IOException | RuntimeException e) {
             throw new ExportException("PDF export failed: " + e.getMessage());
+        }
+    }
+
+    // Helper method for file size formatting
+    private String formatFileSize(long bytes) {
+        if (bytes < 1024) {
+            return bytes + " B";
+        } else if (bytes < 1024 * 1024) {
+            return String.format("%.1f KB", bytes / 1024.0);
+        } else {
+            return String.format("%.1f MB", bytes / (1024.0 * 1024.0));
         }
     }
 
@@ -472,7 +443,7 @@ public class ReportGenerator implements Exportable {
             System.out.println("3. Generating Excel Spreadsheet...");
             exportExcelSpreadsheet(studentId, filename);
 
-            System.out.println("\n✅ BATCH REPORT GENERATION COMPLETE");
+            System.out.println("\n BATCH REPORT GENERATION COMPLETE");
             System.out.println("All 3 formats generated successfully:");
             System.out.println("  - PDF Summary:     reports/pdf/" + filename + "_summary.pdf");
             System.out.println("  - Detailed Text:   reports/text/" + filename + "_detailed.txt");
