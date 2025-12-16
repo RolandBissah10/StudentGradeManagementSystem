@@ -1,0 +1,23 @@
+BULK IMPORT LOG
+File: sample_grades.csv
+Started: 2025-12-12 08:07:12
+=========================================
+
+Row 2: SUCCESS - STU001, Mathematics, 85.0
+Row 3: SUCCESS - STU002, English, 92.0
+Row 4: SUCCESS - STU003, Music, 28.0
+Row 5: SUCCESS - STU004, Science, 88.0
+Row 6: SUCCESS - STU005, Art, 95.0
+Row 7: SUCCESS - STU006, Mathematics, 78.0
+Row 8: SUCCESS - STU007, English, 65.0
+Row 9: SUCCESS - STU008, Physical Education, 82.0
+Row 10: SUCCESS - STU009, Science, 91.0
+Row 11: SUCCESS - STU010, Music, 74.0
+Row 12: FAILED - Student with ID 'STU211' not found in the system.
+Row 13: FAILED - Student with ID 'STU123' not found in the system.
+
+IMPORT SUMMARY
+Total Rows: 13
+Successfully Imported: 10
+Failed: 2
+Completed: 2025-12-12 08:07:12
