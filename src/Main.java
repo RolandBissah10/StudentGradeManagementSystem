@@ -1518,7 +1518,6 @@ public class Main {
                     String domain = scanner.nextLine().trim();
                     results = patternSearchService.searchByEmailDomain(domain);
                     break;
-
                 case "2":
                     System.out.print("Enter phone area code pattern: ");
                     String areaCode = scanner.nextLine().trim();
