@@ -26,6 +26,11 @@
             <artifactId>junit-platform-launcher</artifactId>
             <version>1.10.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>2.0.29</version>
+        </dependency>
     </dependencies>
 
     <build>
