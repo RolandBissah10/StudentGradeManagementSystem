@@ -70,13 +70,13 @@ public class ConcurrentTaskService {
 
                     switch (reportType.toLowerCase()) {
                         case "csv":
-                            fileIOService.exportToCSV(student, grades, filename);
+                            fileIOService.exportToCSV(student, grades, filename, "detailed"); // Add reportType
                             break;
                         case "json":
-                            fileIOService.exportToJSON(student, grades, filename);
+                            fileIOService.exportToJSON(student, grades, filename, "detailed"); // Add reportType
                             break;
                         case "all":
-                            fileIOService.exportAllFormats(student, grades, filename);
+                            fileIOService.exportAllFormats(student, grades, filename, "detailed"); // Add reportType
                             break;
                     }
 
