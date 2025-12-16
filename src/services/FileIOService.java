@@ -18,59 +18,114 @@ public class FileIOService {
     // Thread-safe map for file locking
     private static final ConcurrentHashMap<String, Object> fileLocks = new ConcurrentHashMap<>();
 
-    public void exportToCSV(Student student, List<Grade> grades, String filename) throws ExportException, IOException {
-        synchronized (getFileLock(filename)) {
-            Path filePath = Paths.get("reports/csv", filename + ".csv");
+    public String exportToCSV(Student student, List<Grade> grades, String baseFilename, String reportType) throws ExportException, IOException {
+        synchronized (getFileLock(baseFilename)) {
+            // Create filename based on report type
+            String filename = baseFilename + ".csv";
+            Path filePath = Paths.get("reports", "csv", filename);
             ensureDirectoryExists(filePath.getParent());
 
             try (BufferedWriter writer = Files.newBufferedWriter(filePath,
                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
 
-                // Write header
-                writer.write("StudentID,Name,Email,Phone,Type,EnrollmentDate,Status");
-                writer.newLine();
+                // Write header based on report type
+                if ("summary".equalsIgnoreCase(reportType)) {
+                    writer.write("StudentID,Name,Email,Phone,Type,GPA,TotalGrades");
+                    writer.newLine();
 
-                // Write student data
-                writer.write(String.format("%s,\"%s\",\"%s\",\"%s\",%s,%s,%s",
-                        student.getStudentId(),
-                        student.getName().replace("\"", "\"\""),
-                        student.getEmail().replace("\"", "\"\""),
-                        student.getPhone().replace("\"", "\"\""),
-                        student.getStudentType(),
-                        student.getEnrollmentDateString(),
-                        student.getStatus()));
-                writer.newLine();
-                writer.newLine();
+                    // Write student data
+                    writer.write(String.format("%s,\"%s\",\"%s\",\"%s\",%s,%.2f,%d",
+                            student.getStudentId(),
+                            student.getName().replace("\"", "\"\""),
+                            student.getEmail().replace("\"", "\"\""),
+                            student.getPhone().replace("\"", "\"\""),
+                            student.getStudentType(),
+//                            student.getGPA(),
+                            grades.size()));
+                    writer.newLine();
+                } else if ("detailed".equalsIgnoreCase(reportType)) {
+                    writer.write("StudentID,Name,Email,Phone,Type,EnrollmentDate,Status");
+                    writer.newLine();
 
-                // Write grades header
-                writer.write("GradeID,Subject,Type,Grade,Date,LetterGrade");
-                writer.newLine();
+                    // Write student data
+                    writer.write(String.format("%s,\"%s\",\"%s\",\"%s\",%s,%s,%s",
+                            student.getStudentId(),
+                            student.getName().replace("\"", "\"\""),
+                            student.getEmail().replace("\"", "\"\""),
+                            student.getPhone().replace("\"", "\"\""),
+                            student.getStudentType(),
+                            student.getEnrollmentDateString(),
+                            student.getStatus()));
+                    writer.newLine();
+                    writer.newLine();
 
-                // Write grades
-                for (Grade grade : grades) {
-                    writer.write(String.format("%s,\"%s\",%s,%.1f,%s,%s",
-                            grade.getGradeId(),
-                            grade.getSubject().getSubjectName().replace("\"", "\"\""),
-                            grade.getSubject().getSubjectType(),
-                            grade.getGrade(),
-                            grade.getDate(),
-                            grade.getLetterGrade()));
+                    // Write grades header
+                    writer.write("GradeID,Subject,Type,Grade,Date,LetterGrade");
+                    writer.newLine();
+
+                    // Write grades
+                    for (Grade grade : grades) {
+                        writer.write(String.format("%s,\"%s\",%s,%.1f,%s,%s",
+                                grade.getGradeId(),
+                                grade.getSubject().getSubjectName().replace("\"", "\"\""),
+                                grade.getSubject().getSubjectType(),
+                                grade.getGrade(),
+                                grade.getDate(),
+                                grade.getLetterGrade()));
+                        writer.newLine();
+                    }
+                } else if ("transcript".equalsIgnoreCase(reportType)) {
+                    writer.write("UNIVERSITY TRANSCRIPT");
+                    writer.newLine();
+                    writer.write("Student: " + student.getName() + " (" + student.getStudentId() + ")");
+                    writer.newLine();
+                    writer.write("Email: " + student.getEmail());
+                    writer.newLine();
+                    writer.write("Enrollment Date: " + student.getEnrollmentDateString());
+                    writer.newLine();
+                    writer.write("-".repeat(50));
+                    writer.newLine();
+                    writer.write("SUBJECT                 TYPE     GRADE  LETTER  DATE");
+                    writer.newLine();
+                    writer.write("-".repeat(50));
+                    writer.newLine();
+
+                    for (Grade grade : grades) {
+                        String subjectName = grade.getSubject().getSubjectName();
+                        String subjectType = grade.getSubject().getSubjectType();
+                        double gradeValue = grade.getGrade();
+                        String letterGrade = grade.getLetterGrade();
+                        String date = grade.getDate();
+
+                        writer.write(String.format("%-20s   %-8s %6.1f   %-6s  %s",
+                                subjectName.length() > 20 ? subjectName.substring(0, 17) + "..." : subjectName,
+                                subjectType,
+                                gradeValue,
+                                letterGrade,
+                                date));
+                        writer.newLine();
+                    }
+
+                    writer.write("-".repeat(50));
+                    writer.newLine();
+//                    writer.write(String.format("GPA: %.2f   Total Credits: %d", student.getGPA(), grades.size()));
                     writer.newLine();
                 }
 
-                long fileSize = Files.size(filePath);
-                System.out.printf("✓ CSV Export completed: %s (%.1f KB)%n",
-                        filePath.getFileName(), fileSize / 1024.0);
+                // Analytics report type would be similar but with more detailed calculations
 
             } catch (IOException e) {
                 throw new ExportException("CSV export failed: " + e.getMessage());
             }
+
+            return filePath.toString();
         }
     }
 
-    public void exportToJSON(Student student, List<Grade> grades, String filename) throws ExportException, IOException {
-        synchronized (getFileLock(filename)) {
-            Path filePath = Paths.get("reports/json", filename + ".json");
+    public String exportToJSON(Student student, List<Grade> grades, String baseFilename, String reportType) throws ExportException, IOException {
+        synchronized (getFileLock(baseFilename)) {
+            String filename = baseFilename + ".json";
+            Path filePath = Paths.get("reports", "json", filename);
             ensureDirectoryExists(filePath.getParent());
 
             try (BufferedWriter writer = Files.newBufferedWriter(filePath,
@@ -78,70 +133,89 @@ public class FileIOService {
 
                 StringBuilder json = new StringBuilder();
                 json.append("{\n");
-                json.append("  \"student\": {\n");
-                json.append(String.format("    \"id\": \"%s\",\n", student.getStudentId()));
-                json.append(String.format("    \"name\": \"%s\",\n", escapeJson(student.getName())));
-                json.append(String.format("    \"email\": \"%s\",\n", escapeJson(student.getEmail())));
-                json.append(String.format("    \"phone\": \"%s\",\n", escapeJson(student.getPhone())));
-                json.append(String.format("    \"type\": \"%s\",\n", student.getStudentType()));
-                json.append(String.format("    \"enrollmentDate\": \"%s\",\n", student.getEnrollmentDateString()));
-                json.append(String.format("    \"status\": \"%s\"\n", student.getStatus()));
-                json.append("  },\n");
-                json.append("  \"grades\": [\n");
 
-                String gradesJson = grades.stream()
-                        .map(grade -> String.format(
-                                "    {\n" +
-                                        "      \"id\": \"%s\",\n" +
-                                        "      \"subject\": \"%s\",\n" +
-                                        "      \"type\": \"%s\",\n" +
-                                        "      \"grade\": %.1f,\n" +
-                                        "      \"date\": \"%s\",\n" +
-                                        "      \"letterGrade\": \"%s\",\n" +
-                                        "      \"timestamp\": \"%s\"\n" +
-                                        "    }",
-                                grade.getGradeId(),
-                                escapeJson(grade.getSubject().getSubjectName()),
-                                grade.getSubject().getSubjectType(),
-                                grade.getGrade(),
-                                grade.getDate(),
-                                grade.getLetterGrade(),
-                                grade.getTimestampString()))
-                        .collect(Collectors.joining(",\n"));
+                if ("summary".equalsIgnoreCase(reportType)) {
+                    json.append("  \"reportType\": \"summary\",\n");
+                    json.append("  \"student\": {\n");
+                    json.append(String.format("    \"id\": \"%s\",\n", student.getStudentId()));
+                    json.append(String.format("    \"name\": \"%s\",\n", escapeJson(student.getName())));
+                    json.append(String.format("    \"email\": \"%s\",\n", escapeJson(student.getEmail())));
+                    json.append(String.format("    \"phone\": \"%s\",\n", escapeJson(student.getPhone())));
+                    json.append(String.format("    \"type\": \"%s\",\n", student.getStudentType()));
+//                    json.append(String.format("    \"gpa\": %.2f,\n", student.getGPA()));
+                    json.append(String.format("    \"totalGrades\": %d\n", grades.size()));
+                    json.append("  },\n");
+                } else if ("detailed".equalsIgnoreCase(reportType)) {
+                    json.append("  \"reportType\": \"detailed\",\n");
+                    json.append("  \"student\": {\n");
+                    json.append(String.format("    \"id\": \"%s\",\n", student.getStudentId()));
+                    json.append(String.format("    \"name\": \"%s\",\n", escapeJson(student.getName())));
+                    json.append(String.format("    \"email\": \"%s\",\n", escapeJson(student.getEmail())));
+                    json.append(String.format("    \"phone\": \"%s\",\n", escapeJson(student.getPhone())));
+                    json.append(String.format("    \"type\": \"%s\",\n", student.getStudentType()));
+                    json.append(String.format("    \"enrollmentDate\": \"%s\",\n", student.getEnrollmentDateString()));
+                    json.append(String.format("    \"status\": \"%s\",\n", student.getStatus()));
+                    json.append(String.format("    \"age\": %d,\n", student.getAge()));
+//                    json.append(String.format("    \"gpa\": %.2f\n", student.getGPA()));
+                    json.append("  },\n");
+                    json.append("  \"grades\": [\n");
 
-                json.append(gradesJson);
-                json.append("\n  ],\n");
+                    String gradesJson = grades.stream()
+                            .map(grade -> String.format(
+                                    "    {\n" +
+                                            "      \"id\": \"%s\",\n" +
+                                            "      \"subject\": \"%s\",\n" +
+                                            "      \"type\": \"%s\",\n" +
+                                            "      \"grade\": %.1f,\n" +
+                                            "      \"date\": \"%s\",\n" +
+                                            "      \"letterGrade\": \"%s\",\n" +
+                                            "      \"timestamp\": \"%s\"\n" +
+                                            "    }",
+                                    grade.getGradeId(),
+                                    escapeJson(grade.getSubject().getSubjectName()),
+                                    grade.getSubject().getSubjectType(),
+                                    grade.getGrade(),
+                                    grade.getDate(),
+                                    grade.getLetterGrade(),
+                                    grade.getTimestampString()))
+                            .collect(Collectors.joining(",\n"));
+
+                    json.append(gradesJson);
+                    json.append("\n  ],\n");
+                }
+
                 json.append(String.format("  \"metadata\": {\n" +
                                 "    \"exportDate\": \"%s\",\n" +
-                                "    \"totalGrades\": %d,\n" +
+                                "    \"reportType\": \"%s\",\n" +
                                 "    \"format\": \"JSON\"\n" +
                                 "  }\n",
                         LocalDateTime.now().format(TIMESTAMP_FORMATTER),
-                        grades.size()));
+                        reportType));
                 json.append("}");
 
                 writer.write(json.toString());
 
-                long fileSize = Files.size(filePath);
-                System.out.printf("✓ JSON Export completed: %s (%.1f KB)%n",
-                        filePath.getFileName(), fileSize / 1024.0);
-
             } catch (IOException e) {
                 throw new ExportException("JSON export failed: " + e.getMessage());
             }
+
+            return filePath.toString();
         }
     }
 
-    public void exportToBinary(Student student, List<Grade> grades, String filename) throws ExportException, IOException {
-        synchronized (getFileLock(filename)) {
-            Path filePath = Paths.get("reports/binary", filename + ".dat");
+    public String exportToBinary(Student student, List<Grade> grades, String baseFilename, String reportType) throws ExportException, IOException {
+        synchronized (getFileLock(baseFilename)) {
+            String filename = baseFilename + ".dat";
+            Path filePath = Paths.get("reports", "binary", filename);
             ensureDirectoryExists(filePath.getParent());
 
             try (ObjectOutputStream oos = new ObjectOutputStream(
                     new BufferedOutputStream(Files.newOutputStream(filePath)))) {
 
-                // Create a simple serializable structure instead of complex objects
                 Map<String, Object> report = new HashMap<>();
+
+                // Add report type
+                report.put("reportType", reportType);
 
                 // Create serializable student data
                 Map<String, String> studentData = new HashMap<>();
@@ -153,6 +227,7 @@ public class FileIOService {
                 studentData.put("enrollmentDate", student.getEnrollmentDateString());
                 studentData.put("status", student.getStatus());
                 studentData.put("age", String.valueOf(student.getAge()));
+//                studentData.put("gpa", String.format("%.2f", student.getGPA()));
 
                 report.put("student", studentData);
 
@@ -180,69 +255,57 @@ public class FileIOService {
                 oos.writeObject(report);
                 oos.flush();
 
-                long fileSize = Files.size(filePath);
-                System.out.printf("✓ Binary Export completed: %s (%.1f KB)%n",
-                        filePath.getFileName(), fileSize / 1024.0);
-                System.out.println("  Format: Serialized HashMap (platform independent)");
-                System.out.printf("  Compression ratio: %.1f:1 (vs text formats)%n",
-                        (grades.size() * 50.0) / Math.max(1, fileSize));
-
             } catch (IOException e) {
-                System.err.println("✗ Binary export error details: " + e.getClass().getName() + ": " + e.getMessage());
-                throw new ExportException("Binary export failed. Make sure all data is serializable: " + e.getMessage());
+                System.err.println("Binary export error: " + e.getClass().getName() + ": " + e.getMessage());
+                throw new ExportException("Binary export failed: " + e.getMessage());
             }
+
+            return filePath.toString();
         }
     }
 
     public void exportAllFormats(Student student, List<Grade> grades, String baseFilename) throws ExportException, IOException {
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-        String filename = baseFilename + "_" + timestamp;
+        // This method is kept for backward compatibility
+        exportAllFormats(student, grades, baseFilename, "detailed");
+    }
 
-        System.out.println("\n=== MULTI-FORMAT EXPORT ===");
-        System.out.println("Processing with NIO.2...");
+    public void exportAllFormats(Student student, List<Grade> grades, String baseFilename, String reportType) throws ExportException, IOException {
+        String filename = baseFilename;
+
+        System.out.println("\nProcessing with NIO.2 Streaming...\n");
 
         long startTime = System.currentTimeMillis();
         int successfulExports = 0;
-        int failedExports = 0;
 
         try {
-            exportToCSV(student, grades, filename + "_csv");
+            exportToCSV(student, grades, filename, reportType);
             successfulExports++;
         } catch (ExportException | IOException e) {
-            failedExports++;
-            System.err.println("✗ CSV export failed: " + e.getMessage());
+            System.err.println("CSV export failed: " + e.getMessage());
         }
 
         try {
-            exportToJSON(student, grades, filename + "_json");
+            exportToJSON(student, grades, filename, reportType);
             successfulExports++;
         } catch (ExportException | IOException e) {
-            failedExports++;
-            System.err.println("✗ JSON export failed: " + e.getMessage());
+            System.err.println("JSON export failed: " + e.getMessage());
         }
 
         try {
-            exportToBinary(student, grades, filename + "_binary");
+            exportToBinary(student, grades, filename, reportType);
             successfulExports++;
         } catch (ExportException | IOException e) {
-            failedExports++;
-            System.err.println("✗ Binary export failed: " + e.getMessage());
+            System.err.println("Binary export failed: " + e.getMessage());
         }
 
         long totalTime = System.currentTimeMillis() - startTime;
 
-        System.out.println("\n=== EXPORT PERFORMANCE SUMMARY ===");
-        System.out.printf("Total Time: %dms%n", totalTime);
-        System.out.printf("Successful: %d/%d formats%n", successfulExports, 3);
-        System.out.println("Formats: CSV, JSON, Binary");
-        System.out.println("Location: ./reports/[csv|json|binary]/");
-
         if (successfulExports == 3) {
-            System.out.println("✓ All formats exported successfully!");
+            System.out.println("All formats exported successfully in " + totalTime + "ms");
         } else if (successfulExports > 0) {
-            System.out.println("⚠ Partially successful: " + successfulExports + "/3 formats exported");
+            System.out.println("Partially successful: " + successfulExports + "/3 formats exported");
         } else {
-            System.out.println("✗ All exports failed!");
+            System.out.println("All exports failed!");
         }
     }
 
@@ -301,7 +364,7 @@ public class FileIOService {
                 }
             }
 
-            System.out.printf("✓ Binary Import completed: %d grades loaded%n", grades.size());
+            System.out.println("Binary Import completed: " + grades.size() + " grades loaded");
             return grades;
 
         } catch (IOException | ClassNotFoundException | ClassCastException e) {
@@ -333,7 +396,6 @@ public class FileIOService {
     private void ensureDirectoryExists(Path directory) throws IOException {
         if (!Files.exists(directory)) {
             Files.createDirectories(directory);
-            System.out.println("✓ Created directory: " + directory);
         }
     }
 
@@ -351,7 +413,6 @@ public class FileIOService {
     }
 
     public void watchImportDirectory() {
-        // This would implement WatchService for auto-detecting new import files
         System.out.println("File watching service available (WatchService implementation)");
     }
 
@@ -371,16 +432,16 @@ public class FileIOService {
 
             // Test binary export
             System.out.println("\n=== TESTING BINARY EXPORT ===");
-            exportToBinary(testStudent, testGrades, "test_export");
-            System.out.println("✓ Test binary export completed successfully!");
+            exportToBinary(testStudent, testGrades, "test_export", "detailed");
+            System.out.println("Test binary export completed successfully!");
 
             // Test binary import
             System.out.println("\n=== TESTING BINARY IMPORT ===");
             List<Grade> importedGrades = importFromBinary("test_export_binary");
-            System.out.println("✓ Test binary import completed: " + importedGrades.size() + " grades loaded");
+            System.out.println("Test binary import completed: " + importedGrades.size() + " grades loaded");
 
         } catch (Exception e) {
-            System.err.println("✗ Binary export test failed: " + e.getMessage());
+            System.err.println("Binary export test failed: " + e.getMessage());
             e.printStackTrace();
         }
     }
