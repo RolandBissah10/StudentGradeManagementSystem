@@ -26,11 +26,6 @@ public class StudentManager {
     }
 
     public void addStudent(Student student) {
-        // Check capacity (keeping your limit logic)
-        if (studentList.size() >= 50) {
-            System.out.println("Maximum student capacity reached!");
-            return;
-        }
 
         // Add to all collections
         studentMap.put(student.getStudentId(), student);

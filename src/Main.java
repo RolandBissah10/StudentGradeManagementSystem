@@ -119,77 +119,138 @@ public class Main {
     }
 
     private static void addSampleStudents() {
-        // Regular Students
-        studentManager.addStudent(new RegularStudent("Alice Johnson", 16,
-                "alice.johnson@university.edu", "+1-555-1001", "2024-09-01"));
-        studentManager.addStudent(new RegularStudent("Michael Chen", 17,
-                "michael.chen@college.org", "+1-555-1002", "2024-09-01"));
-        studentManager.addStudent(new RegularStudent("Sarah Brown", 16,
-                "sarah.brown@school.net", "+1-555-1003", "2024-09-01"));
-        studentManager.addStudent(new RegularStudent("David Lee", 17,
-                "david.lee@university.edu", "+1-555-1004", "2024-09-01"));
-        studentManager.addStudent(new RegularStudent("Emma Wilson", 16,
-                "emma.wilson@college.org", "+1-555-1005", "2024-09-01"));
-
-        // Honors Students
-        studentManager.addStudent(new HonorsStudent("Robert Smith", 17,
-                "robert.smith@university.edu", "+1-555-2001", "2024-09-01"));
-        studentManager.addStudent(new HonorsStudent("Olivia Taylor", 16,
-                "olivia.taylor@college.org", "+1-555-2002", "2024-09-01"));
-        studentManager.addStudent(new HonorsStudent("James Anderson", 17,
-                "james.anderson@school.net", "+1-555-2003", "2024-09-01"));
-        studentManager.addStudent(new HonorsStudent("Sophia Martinez", 16,
-                "sophia.martinez@university.edu", "+1-555-2004", "2024-09-01"));
-        studentManager.addStudent(new HonorsStudent("Lucas White", 17,
-                "lucas.white@college.org", "+1-555-2005", "2024-09-01"));
-
-        System.out.println("✓ Added " + studentManager.getStudentCount() + " sample students");
-    }
-
-    private static void addSampleGrades() {
-        // Sample subjects
-
-        Subject[] coreSubjects = {
-                new CoreSubject("Mathematics", "MAT101"),
-                new CoreSubject("English", "ENG101"),
-                new CoreSubject("Science", "SCI101"),
-                new CoreSubject("History", "HIS101"),
-                new CoreSubject("Computer Science", "CSC101")
+        String[] firstNames = {
+                "Alex", "Jamie", "Taylor", "Morgan", "Jordan", "Casey", "Riley", "Avery",
+                "Cameron", "Dakota", "Skyler", "Peyton", "Quinn", "Rowan", "Sage", "Finley",
+                "Charlie", "Emerson", "River", "Phoenix", "Kai", "Drew", "Blake", "Hayden",
+                "Addison", "Aiden", "Brooklyn", "Carter", "Evelyn", "Gabriel", "Hannah",
+                "Isaac", "Isabella", "Jack", "Lily", "Liam", "Mia", "Noah", "Olivia",
+                "Sophia", "William", "Ethan", "Ava", "James", "Charlotte", "Benjamin",
+                "Amelia", "Lucas", "Harper", "Henry", "Ella", "Alexander", "Grace",
+                "Michael", "Chloe", "Daniel", "Victoria", "Matthew", "Zoe", "Samuel",
+                "Natalie", "David", "Layla", "Joseph", "Scarlett", "Jackson", "Riley",
+                "John", "Hazel", "Luke", "Penelope", "Andrew", "Stella", "Ryan", "Nora",
+                "Nathan", "Lillian", "Caleb", "Aurora", "Christian", "Eleanor", "Levi",
+                "Ellie", "Julian", "Claire", "Christopher", "Violet", "Joshua", "Savannah"
         };
 
-        Subject[] electiveSubjects = {
-                new ElectiveSubject("Music", "MUS101"),
-                new ElectiveSubject("Art", "ART101"),
-                new ElectiveSubject("Physical Education", "PED101"),
-                new ElectiveSubject("Drama", "DRA101"),
-                new ElectiveSubject("Economics", "ECO101")
+        String[] lastNames = {
+                "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis",
+                "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson",
+                "Thomas", "Taylor", "Moore", "Jackson", "Martin", "Lee", "Perez", "Thompson",
+                "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson", "Walker",
+                "Young", "Allen", "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores",
+                "Green", "Adams", "Nelson", "Baker", "Hall", "Rivera", "Campbell", "Mitchell",
+                "Carter", "Roberts", "Gomez", "Phillips", "Evans", "Turner", "Diaz", "Parker",
+                "Cruz", "Edwards", "Collins", "Reyes", "Stewart", "Morris", "Morales", "Murphy",
+                "Cook", "Rogers", "Gutierrez", "Ortiz", "Morgan", "Cooper", "Peterson", "Bailey",
+                "Reed", "Kelly", "Howard", "Ramos", "Kim", "Cox", "Ward", "Richardson", "Watson",
+                "Brooks", "Chavez", "Wood", "James", "Bennett", "Gray", "Mendoza", "Ruiz", "Hughes"
         };
 
-        // Add grades for each student
-        Random random = new Random(42); // Fixed seed for reproducibility
-        int totalGradesAdded = 0;
+        String[] domains = {
+                "university.edu", "college.org", "school.net", "institute.edu", "academy.org",
+                "campus.edu", "learning.net", "studies.org", "knowledge.edu"
+        };
 
-        for (int i = 1; i <= 10; i++) {
-            String studentId = String.format("STU%03d", i);
+        String[] enrollmentDates = {
+                "2024-09-01", "2024-01-15", "2024-08-20", "2024-02-01", "2024-07-10"
+        };
 
-            // Add 3-5 core subject grades
-            for (int j = 0; j < 3 + random.nextInt(3); j++) {
-                Subject subject = coreSubjects[random.nextInt(coreSubjects.length)];
-                double grade = 60 + random.nextInt(40); // Grades between 60-100
-                gradeManager.addGrade(new Grade(studentId, subject, grade));
-                totalGradesAdded++;
-            }
+        java.util.Random random = new java.util.Random();
+        int regularCount = 0;
+        int honorsCount = 0;
 
-            // Add 2-4 elective subject grades
-            for (int j = 0; j < 2 + random.nextInt(3); j++) {
-                Subject subject = electiveSubjects[random.nextInt(electiveSubjects.length)];
-                double grade = 50 + random.nextInt(50); // Grades between 50-100
-                gradeManager.addGrade(new Grade(studentId, subject, grade));
-                totalGradesAdded++;
+        for (int i = 0; i < 25; i++) {
+            // Generate random student data
+            String firstName = firstNames[random.nextInt(firstNames.length)];
+            String lastName = lastNames[random.nextInt(lastNames.length)];
+            String fullName = firstName + " " + lastName;
+            int age = 15 + random.nextInt(4); // Ages 15-18
+
+            // Generate email
+            String email = firstName.toLowerCase() + "." + lastName.toLowerCase()
+                    + "@" + domains[random.nextInt(domains.length)];
+
+            // Generate phone number (format: +1-555-XXXX where XXXX starts from 3001)
+            String phone = String.format("+1-555-%04d", 3001 + i);
+
+            // Random enrollment date
+            String enrollmentDate = enrollmentDates[random.nextInt(enrollmentDates.length)];
+
+            // Randomly decide if student is Regular (60%) or Honors (40%)
+            if (random.nextDouble() < 0.4) {
+                // Create Honors student
+                studentManager.addStudent(new HonorsStudent(
+                        fullName, age, email, phone, enrollmentDate
+                ));
+                honorsCount++;
+            } else {
+                // Create Regular student
+                studentManager.addStudent(new RegularStudent(
+                        fullName, age, email, phone, enrollmentDate
+                ));
+                regularCount++;
             }
         }
 
-        System.out.println("✓ Added " + totalGradesAdded + " sample grades");
+        System.out.println("✓ Successfully added 100 sample students:");
+        System.out.println("  - Regular Students: " + regularCount);
+        System.out.println("  - Honors Students: " + honorsCount);
+        System.out.println("  - Total: " + studentManager.getStudentCount());
+    }
+
+    private static void addSampleGrades() {
+        // Subjects
+        List<Subject> subjects = new ArrayList<>();
+        subjects.add(new CoreSubject("Mathematics", "MAT101"));
+        subjects.add(new CoreSubject("English", "ENG101"));
+        subjects.add(new CoreSubject("Science", "SCI101"));
+        subjects.add(new ElectiveSubject("Art", "ART101"));
+        subjects.add(new ElectiveSubject("Music", "MUS101"));
+
+        List<Student> students = (List<Student>) studentManager.getAllStudents();
+
+        if (students.isEmpty()) {
+            System.out.println("⚠ No students found.");
+            return;
+        }
+
+        Random random = new Random();
+        int totalGrades = 0;
+        int failingCount = 0;
+
+        System.out.println("Generating grades for " + students.size() + " students (40% will fail)...");
+
+        for (Student student : students) {
+            String studentId = student.getStudentId();
+            if (studentId == null || studentId.isEmpty()) continue;
+
+            // Each student has 40% chance of failing
+            boolean isFailing = random.nextDouble() < 0.40;
+
+            // Add 3-5 grades
+            int gradeCount = 3 + random.nextInt(3);
+
+            for (int j = 0; j < gradeCount; j++) {
+                Subject subject = subjects.get(random.nextInt(subjects.size()));
+                double grade = isFailing ?
+                        40 + random.nextInt(45) :  // 40-84 for failing
+                        65 + random.nextInt(36);   // 65-100 for passing
+
+                gradeManager.addGrade(new Grade(studentId, subject, grade));
+                totalGrades++;
+            }
+
+            student.setStatus(isFailing ? "FAILING" : "PASSING");
+            if (isFailing) failingCount++;
+        }
+
+        System.out.println("✓ Added " + totalGrades + " grades");
+        System.out.println("  - Passing: " + (students.size() - failingCount) +
+                " (" + String.format("%.1f%%", (students.size() - failingCount) * 100.0 / students.size()) + ")");
+        System.out.println("  - Failing: " + failingCount +
+                " (" + String.format("%.1f%%", failingCount * 100.0 / students.size()) + ")");
     }
 
     private static void initializeScheduledTasks() {
