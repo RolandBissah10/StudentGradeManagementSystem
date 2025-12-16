@@ -1,0 +1,81 @@
+{
+  "student": {
+    "id": "STU005",
+    "name": "Emma Wilson",
+    "email": "emma.wilson@college.org",
+    "phone": "+1-555-1005",
+    "type": "Regular",
+    "enrollmentDate": "2024-09-01",
+    "status": "Active"
+  },
+  "grades": [
+    {
+      "id": "GRD029",
+      "subject": "Mathematics",
+      "type": "Core",
+      "grade": 99.0,
+      "date": "14-12-2025",
+      "letterGrade": "A",
+      "timestamp": "2025-12-14 12:32:30"
+    },
+    {
+      "id": "GRD030",
+      "subject": "Computer Science",
+      "type": "Core",
+      "grade": 76.0,
+      "date": "14-12-2025",
+      "letterGrade": "C",
+      "timestamp": "2025-12-14 12:32:30"
+    },
+    {
+      "id": "GRD031",
+      "subject": "History",
+      "type": "Core",
+      "grade": 90.0,
+      "date": "14-12-2025",
+      "letterGrade": "A-",
+      "timestamp": "2025-12-14 12:32:30"
+    },
+    {
+      "id": "GRD032",
+      "subject": "Science",
+      "type": "Core",
+      "grade": 89.0,
+      "date": "14-12-2025",
+      "letterGrade": "B+",
+      "timestamp": "2025-12-14 12:32:30"
+    },
+    {
+      "id": "GRD033",
+      "subject": "English",
+      "type": "Core",
+      "grade": 89.0,
+      "date": "14-12-2025",
+      "letterGrade": "B+",
+      "timestamp": "2025-12-14 12:32:30"
+    },
+    {
+      "id": "GRD034",
+      "subject": "Physical Education",
+      "type": "Elective",
+      "grade": 96.0,
+      "date": "14-12-2025",
+      "letterGrade": "A",
+      "timestamp": "2025-12-14 12:32:30"
+    },
+    {
+      "id": "GRD035",
+      "subject": "Physical Education",
+      "type": "Elective",
+      "grade": 51.0,
+      "date": "14-12-2025",
+      "letterGrade": "F",
+      "timestamp": "2025-12-14 12:32:30"
+    }
+  ],
+  "metadata": {
+    "exportDate": "2025-12-14_123727",
+    "totalGrades": 7,
+    "format": "JSON"
+  }
+}

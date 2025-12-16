@@ -1,0 +1,12 @@
+StudentID,Name,Email,Phone,Type,EnrollmentDate,Status
+STU001,"Alice Johnson","alice.johnson@university.edu","+1-555-1001",Regular,2024-09-01,Active
+
+GradeID,Subject,Type,Grade,Date,LetterGrade
+GRD001,"History",Core,68.0,15-12-2025,D+
+GRD002,"Mathematics",Core,65.0,15-12-2025,D
+GRD003,"History",Core,99.0,15-12-2025,A
+GRD004,"Science",Core,82.0,15-12-2025,B-
+GRD005,"Art",Elective,82.0,15-12-2025,B-
+GRD006,"Music",Elective,93.0,15-12-2025,A
+GRD007,"Music",Elective,63.0,15-12-2025,D
+GRD008,"Drama",Elective,93.0,15-12-2025,A

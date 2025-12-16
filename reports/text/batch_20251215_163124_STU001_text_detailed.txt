@@ -1,0 +1,38 @@
+DETAILED GRADE REPORT
+Generated: 2025-12-15 16:31:24
+=========================================
+
+STUDENT INFORMATION
+ID: STU001
+Name: Alice Johnson
+Type: Regular
+Age: 16
+Email: alice.johnson@university.edu
+Phone: +1-555-1001
+Enrollment Date: 2024-09-01
+Passing Grade: 50.0%
+Status: Active
+
+GRADE HISTORY
+---------------------------------------------------
+GRD ID   | DATE       | SUBJECT         | TYPE     | GRADE   | LETTER
+---------------------------------------------------
+GRD008   | 15-12-2025 | Drama           | Elective |   93.0% | A    
+GRD007   | 15-12-2025 | Music           | Elective |   63.0% | D    
+GRD006   | 15-12-2025 | Music           | Elective |   93.0% | A    
+GRD005   | 15-12-2025 | Art             | Elective |   82.0% | B-   
+GRD004   | 15-12-2025 | Science         | Core     |   82.0% | B-   
+GRD003   | 15-12-2025 | History         | Core     |   99.0% | A    
+GRD002   | 15-12-2025 | Mathematics     | Core     |   65.0% | D    
+GRD001   | 15-12-2025 | History         | Core     |   68.0% | D+   
+
+STATISTICS
+Total Grades: 8
+Overall Average: 80.6%
+Core Subjects Average: 78.5%
+Elective Subjects Average: 82.8%
+
+GRADE DISTRIBUTION
+B (80-89): 2 grades
+D (60-69): 3 grades
+A (90-100): 3 grades

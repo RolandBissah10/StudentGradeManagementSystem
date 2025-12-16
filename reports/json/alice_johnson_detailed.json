@@ -1,0 +1,92 @@
+{
+  "reportType": "detailed",
+  "student": {
+    "id": "STU001",
+    "name": "Alice Johnson",
+    "email": "alice.johnson@university.edu",
+    "phone": "+1-555-1001",
+    "type": "Regular",
+    "enrollmentDate": "2024-09-01",
+    "status": "Active",
+    "age": 16,
+  },
+  "grades": [
+    {
+      "id": "GRD001",
+      "subject": "History",
+      "type": "Core",
+      "grade": 68.0,
+      "date": "15-12-2025",
+      "letterGrade": "D+",
+      "timestamp": "2025-12-15 15:42:35"
+    },
+    {
+      "id": "GRD002",
+      "subject": "Mathematics",
+      "type": "Core",
+      "grade": 65.0,
+      "date": "15-12-2025",
+      "letterGrade": "D",
+      "timestamp": "2025-12-15 15:42:35"
+    },
+    {
+      "id": "GRD003",
+      "subject": "History",
+      "type": "Core",
+      "grade": 99.0,
+      "date": "15-12-2025",
+      "letterGrade": "A",
+      "timestamp": "2025-12-15 15:42:35"
+    },
+    {
+      "id": "GRD004",
+      "subject": "Science",
+      "type": "Core",
+      "grade": 82.0,
+      "date": "15-12-2025",
+      "letterGrade": "B-",
+      "timestamp": "2025-12-15 15:42:35"
+    },
+    {
+      "id": "GRD005",
+      "subject": "Art",
+      "type": "Elective",
+      "grade": 82.0,
+      "date": "15-12-2025",
+      "letterGrade": "B-",
+      "timestamp": "2025-12-15 15:42:35"
+    },
+    {
+      "id": "GRD006",
+      "subject": "Music",
+      "type": "Elective",
+      "grade": 93.0,
+      "date": "15-12-2025",
+      "letterGrade": "A",
+      "timestamp": "2025-12-15 15:42:35"
+    },
+    {
+      "id": "GRD007",
+      "subject": "Music",
+      "type": "Elective",
+      "grade": 63.0,
+      "date": "15-12-2025",
+      "letterGrade": "D",
+      "timestamp": "2025-12-15 15:42:35"
+    },
+    {
+      "id": "GRD008",
+      "subject": "Drama",
+      "type": "Elective",
+      "grade": 93.0,
+      "date": "15-12-2025",
+      "letterGrade": "A",
+      "timestamp": "2025-12-15 15:42:35"
+    }
+  ],
+  "metadata": {
+    "exportDate": "2025-12-15_154326",
+    "reportType": "detailed",
+    "format": "JSON"
+  }
+}

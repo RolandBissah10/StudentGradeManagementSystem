@@ -1,0 +1,37 @@
+DETAILED GRADE REPORT
+Generated: 2025-12-15 16:31:24
+=========================================
+
+STUDENT INFORMATION
+ID: STU009
+Name: Sophia Martinez
+Type: Honors
+Age: 16
+Email: sophia.martinez@university.edu
+Phone: +1-555-2004
+Enrollment Date: 2024-09-01
+Passing Grade: 60.0%
+Status: Active
+
+GRADE HISTORY
+---------------------------------------------------
+GRD ID   | DATE       | SUBJECT         | TYPE     | GRADE   | LETTER
+---------------------------------------------------
+GRD063   | 15-12-2025 | Economics       | Elective |   77.0% | C+   
+GRD062   | 15-12-2025 | Drama           | Elective |   78.0% | C+   
+GRD061   | 15-12-2025 | History         | Core     |   93.0% | A    
+GRD060   | 15-12-2025 | English         | Core     |   79.0% | C+   
+GRD059   | 15-12-2025 | History         | Core     |   86.0% | B    
+GRD058   | 15-12-2025 | Science         | Core     |   71.0% | C-   
+GRD057   | 15-12-2025 | Mathematics     | Core     |   76.0% | C    
+
+STATISTICS
+Total Grades: 7
+Overall Average: 80.0%
+Core Subjects Average: 81.0%
+Elective Subjects Average: 77.5%
+
+GRADE DISTRIBUTION
+B (80-89): 1 grades
+C (70-79): 5 grades
+A (90-100): 1 grades

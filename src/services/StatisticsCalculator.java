@@ -6,6 +6,7 @@ import models.Student;
 import models.StudentManager;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class StatisticsCalculator {
     private StudentManager studentManager;
@@ -17,11 +18,11 @@ public class StatisticsCalculator {
     }
 
     public void displayClassStatistics() {
-        System.out.println("\nCLASS STATISTICS");
+        System.out.println("\nCLASS STATISTICS WITH STREAM PROCESSING");
         System.out.println("=========================================");
 
-        int totalStudents = studentManager.getStudentCountValue();
-        int totalGrades = gradeManager.getGradeCount();
+        int totalStudents = studentManager.getStudentCount();
+        int totalGrades = gradeManager.getTotalGradeCount();
 
         System.out.println("Total Students: " + totalStudents);
         System.out.println("Total Grades Recorded: " + totalGrades);
@@ -34,184 +35,174 @@ public class StatisticsCalculator {
     }
 
     private void displayGradeDistribution() {
-        System.out.println("GRADE DISTRIBUTION");
+        System.out.println("GRADE DISTRIBUTION (Using Streams)");
         System.out.println();
 
-        int[] distribution = new int[5]; // A, B, C, D, F
-        Grade[] grades = gradeManager.getGrades();
-        int gradeCount = gradeManager.getGradeCount();
+        // Get all grades using new method
+        List<Grade> allGrades = gradeManager.getGradesByStudent("all");
 
-        for (int i = 0; i < gradeCount; i++) {
-            double grade = grades[i].getGrade();
-            if (grade >= 90) distribution[0]++;      // A
-            else if (grade >= 80) distribution[1]++; // B
-            else if (grade >= 70) distribution[2]++; // C
-            else if (grade >= 60) distribution[3]++; // D
-            else distribution[4]++;                  // F
+        // Use stream to calculate distribution
+        Map<String, Long> distribution = allGrades.stream()
+                .collect(Collectors.groupingBy(
+                        grade -> getGradeCategory(grade.getGrade()),
+                        Collectors.counting()
+                ));
+
+        // Ensure all categories exist
+        String[] categories = {"90-100% (A)", "80-89% (B)", "70-79% (C)", "60-69% (D)", "0-59% (F)"};
+        for (String category : categories) {
+            distribution.putIfAbsent(category, 0L);
         }
 
         // Find maximum count for scaling
-        int maxCount = 0;
-        for (int count : distribution) {
-            if (count > maxCount) {
-                maxCount = count;
-            }
-        }
+        long maxCount = distribution.values().stream()
+                .max(Long::compare)
+                .orElse(1L);
 
-        String[] categories = {"90-100% (A)", "80-89% (B)", "70-79% (C)", "60-69% (D)", "0-59% (F)"};
+        // Display bar chart
+        for (String category : categories) {
+            long count = distribution.get(category);
+            double percentage = allGrades.size() > 0 ? (count * 100.0) / allGrades.size() : 0;
 
-        // Display matrix/bar chart visualization
-        for (int i = 0; i < distribution.length; i++) {
-            double percentage = gradeCount > 0 ? (distribution[i] * 100.0) / gradeCount : 0;
+            System.out.printf("%-12s: ", category);
 
-            // Display category label
-            System.out.printf("%-12s: ", categories[i]);
-
-            // Draw bar chart (scaled to fit in console)
+            // Draw bar chart
             if (maxCount > 0) {
-                int barLength = (int) Math.round((distribution[i] * 40.0) / maxCount);
-                for (int j = 0; j < barLength; j++) {
-                    System.out.print("█");
-                }
+                int barLength = (int) Math.round((count * 40.0) / maxCount);
+                System.out.print("█".repeat(barLength));
             }
 
-            // Display percentage and count
-            System.out.printf(" %5.1f%% (%d grades)%n", percentage, distribution[i]);
+            System.out.printf(" %5.1f%% (%d grades)%n", percentage, count);
         }
         System.out.println();
     }
 
+    private String getGradeCategory(double grade) {
+        if (grade >= 90) return "90-100% (A)";
+        else if (grade >= 80) return "80-89% (B)";
+        else if (grade >= 70) return "70-79% (C)";
+        else if (grade >= 60) return "60-69% (D)";
+        else return "0-59% (F)";
+    }
+
     private void displayStatisticalAnalysis() {
-        System.out.println("STATISTICAL ANALYSIS");
+        System.out.println("STATISTICAL ANALYSIS (Using Streams)");
         System.out.println();
 
-        Grade[] grades = gradeManager.getGrades();
-        int gradeCount = gradeManager.getGradeCount();
+        List<Grade> allGrades = gradeManager.getGradesByStudent("all");
 
-        if (gradeCount == 0) {
+        if (allGrades.isEmpty()) {
             System.out.println("No grades available for analysis.");
             return;
         }
 
-        // Calculate mean
-        double sum = 0;
-        double[] gradeValues = new double[gradeCount];
+        // Calculate statistics using streams
+        DoubleSummaryStatistics stats = allGrades.stream()
+                .mapToDouble(Grade::getGrade)
+                .summaryStatistics();
 
-        for (int i = 0; i < gradeCount; i++) {
-            gradeValues[i] = grades[i].getGrade();
-            sum += gradeValues[i];
-        }
-        double mean = sum / gradeCount;
+        double mean = stats.getAverage();
+        long gradeCount = stats.getCount();
 
         // Calculate median
-        Arrays.sort(gradeValues);
+        List<Double> sortedGrades = allGrades.stream()
+                .map(Grade::getGrade)
+                .sorted()
+                .collect(Collectors.toList());
+
         double median;
         if (gradeCount % 2 == 0) {
-            median = (gradeValues[gradeCount/2 - 1] + gradeValues[gradeCount/2]) / 2.0;
+            median = (sortedGrades.get((int)gradeCount/2 - 1) + sortedGrades.get((int)gradeCount/2)) / 2.0;
         } else {
-            median = gradeValues[gradeCount/2];
+            median = sortedGrades.get((int)gradeCount/2);
         }
 
-        // Calculate mode
-        double mode = calculateMode(gradeValues);
+        // Calculate mode using stream
+        double mode = allGrades.stream()
+                .collect(Collectors.groupingBy(Grade::getGrade, Collectors.counting()))
+                .entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse(0.0);
 
         // Calculate standard deviation
-        double variance = 0;
-        for (double grade : gradeValues) {
-            variance += Math.pow(grade - mean, 2);
-        }
-        double stdDev = Math.sqrt(variance / gradeCount);
+        double variance = allGrades.stream()
+                .mapToDouble(grade -> Math.pow(grade.getGrade() - mean, 2))
+                .average()
+                .orElse(0.0);
+        double stdDev = Math.sqrt(variance);
 
-        // Calculate range
-        double range = gradeValues[gradeCount - 1] - gradeValues[0];
+        double range = stats.getMax() - stats.getMin();
 
         System.out.printf("Mean (Average):    %6.1f%%%n", mean);
         System.out.printf("Median:           %6.1f%%%n", median);
         System.out.printf("Mode:             %6.1f%%%n", mode);
         System.out.printf("Standard Deviation: %5.1f%%%n", stdDev);
         System.out.printf("Range:            %6.1f%% (%.0f%% - %.0f%%)%n",
-                range, gradeValues[0], gradeValues[gradeCount - 1]);
+                range, stats.getMin(), stats.getMax());
         System.out.println();
 
         // Find highest and lowest grades
         displayHighestLowestGrades();
     }
 
-    private double calculateMode(double[] grades) {
-        Map<Double, Integer> frequency = new HashMap<>();
-        for (double grade : grades) {
-            frequency.put(grade, frequency.getOrDefault(grade, 0) + 1);
-        }
-
-        double mode = grades[0];
-        int maxCount = 0;
-
-        for (Map.Entry<Double, Integer> entry : frequency.entrySet()) {
-            if (entry.getValue() > maxCount) {
-                mode = entry.getKey();
-                maxCount = entry.getValue();
-            }
-        }
-
-        return mode;
-    }
-
     private void displayHighestLowestGrades() {
-        Grade[] grades = gradeManager.getGrades();
-        int gradeCount = gradeManager.getGradeCount();
+        List<Grade> allGrades = gradeManager.getGradesByStudent("all");
 
-        if (gradeCount == 0) return;
+        if (allGrades.isEmpty()) return;
 
-        Grade highest = grades[0];
-        Grade lowest = grades[0];
+        // Find highest and lowest using streams
+        Grade highest = allGrades.stream()
+                .max(Comparator.comparingDouble(Grade::getGrade))
+                .orElse(null);
 
-        for (int i = 1; i < gradeCount; i++) {
-            if (grades[i].getGrade() > highest.getGrade()) {
-                highest = grades[i];
-            }
-            if (grades[i].getGrade() < lowest.getGrade()) {
-                lowest = grades[i];
-            }
+        Grade lowest = allGrades.stream()
+                .min(Comparator.comparingDouble(Grade::getGrade))
+                .orElse(null);
+
+        if (highest != null) {
+            Student highStudent = studentManager.findStudent(highest.getStudentId());
+            System.out.printf("Highest Grade:    %6.1f%% (%s - %s)%n",
+                    highest.getGrade(),
+                    highStudent != null ? highStudent.getStudentId() : "Unknown",
+                    highest.getSubject().getSubjectName());
         }
 
-        Student highStudent = studentManager.findStudent(highest.getStudentId());
-        Student lowStudent = studentManager.findStudent(lowest.getStudentId());
-
-        System.out.printf("Highest Grade:    %6.1f%% (%s - %s)%n",
-                highest.getGrade(),
-                highStudent != null ? highStudent.getStudentId() : "Unknown",
-                highest.getSubject().getSubjectName());
-
-        System.out.printf("Lowest Grade:     %6.1f%% (%s - %s)%n",
-                lowest.getGrade(),
-                lowStudent != null ? lowStudent.getStudentId() : "Unknown",
-                lowest.getSubject().getSubjectName());
+        if (lowest != null) {
+            Student lowStudent = studentManager.findStudent(lowest.getStudentId());
+            System.out.printf("Lowest Grade:     %6.1f%% (%s - %s)%n",
+                    lowest.getGrade(),
+                    lowStudent != null ? lowStudent.getStudentId() : "Unknown",
+                    lowest.getSubject().getSubjectName());
+        }
         System.out.println();
     }
 
     private void displaySubjectPerformance() {
-        System.out.println("SUBJECT PERFORMANCE");
+        System.out.println("SUBJECT PERFORMANCE (Using Streams)");
         System.out.println();
 
-        Map<String, Double> subjectSums = new HashMap<>();
-        Map<String, Integer> subjectCounts = new HashMap<>();
+        List<Grade> allGrades = gradeManager.getGradesByStudent("all");
 
-        Grade[] grades = gradeManager.getGrades();
-        int gradeCount = gradeManager.getGradeCount();
+        // Calculate subject averages using streams
+        Map<String, Double> subjectAverages = allGrades.stream()
+                .collect(Collectors.groupingBy(
+                        grade -> grade.getSubject().getSubjectName(),
+                        Collectors.averagingDouble(Grade::getGrade)
+                ));
 
-        for (int i = 0; i < gradeCount; i++) {
-            String subjectName = grades[i].getSubject().getSubjectName();
-            subjectSums.put(subjectName, subjectSums.getOrDefault(subjectName, 0.0) + grades[i].getGrade());
-            subjectCounts.put(subjectName, subjectCounts.getOrDefault(subjectName, 0) + 1);
-        }
+        // Separate core and elective subjects
+        List<String> coreSubjects = Arrays.asList("Mathematics", "English", "Science");
+        List<String> electiveSubjects = Arrays.asList("Music", "Art", "Physical Education");
 
         // Core subjects
+        System.out.println("Core Subjects:");
         double coreTotal = 0;
         int coreCount = 0;
-        System.out.println("Core Subjects:");
-        for (String subject : Arrays.asList("Mathematics", "English", "Science")) {
-            if (subjectCounts.containsKey(subject)) {
-                double avg = subjectSums.get(subject) / subjectCounts.get(subject);
+
+        for (String subject : coreSubjects) {
+            if (subjectAverages.containsKey(subject)) {
+                double avg = subjectAverages.get(subject);
                 System.out.printf("  %-15s: %6.1f%%%n", subject + ":", avg);
                 coreTotal += avg;
                 coreCount++;
@@ -223,12 +214,13 @@ public class StatisticsCalculator {
         System.out.println();
 
         // Elective subjects
+        System.out.println("Elective Subjects:");
         double electiveTotal = 0;
         int electiveCount = 0;
-        System.out.println("Elective Subjects:");
-        for (String subject : Arrays.asList("Music", "Art", "Physical Education")) {
-            if (subjectCounts.containsKey(subject)) {
-                double avg = subjectSums.get(subject) / subjectCounts.get(subject);
+
+        for (String subject : electiveSubjects) {
+            if (subjectAverages.containsKey(subject)) {
+                double avg = subjectAverages.get(subject);
                 System.out.printf("  %-15s: %6.1f%%%n", subject + ":", avg);
                 electiveTotal += avg;
                 electiveCount++;
@@ -241,29 +233,124 @@ public class StatisticsCalculator {
     }
 
     private void displayStudentTypeComparison() {
-        System.out.println("STUDENT TYPE COMPARISON");
+        System.out.println("STUDENT TYPE COMPARISON (Using Streams)");
         System.out.println();
 
-        Map<String, Double> typeSums = new HashMap<>();
-        Map<String, Integer> typeCounts = new HashMap<>();
+        // Get all students
+        List<Student> allStudents = studentManager.getStudents();
 
-        Student[] students = studentManager.getStudents();
-        int studentCount = studentManager.getStudentCountValue();
+        // Calculate averages by student type using streams
+        Map<String, List<Double>> gradesByType = allStudents.stream()
+                .collect(Collectors.groupingBy(
+                        Student::getStudentType,
+                        Collectors.mapping(
+                                student -> gradeManager.calculateOverallAverage(student.getStudentId()),
+                                Collectors.filtering(avg -> avg > 0, Collectors.toList())
+                        )
+                ));
 
-        for (int i = 0; i < studentCount; i++) {
-            Student student = students[i];
-            double avg = gradeManager.calculateOverallAverage(student.getStudentId());
-            if (avg > 0) {
-                String type = student.getStudentType();
-                typeSums.put(type, typeSums.getOrDefault(type, 0.0) + avg);
-                typeCounts.put(type, typeCounts.getOrDefault(type, 0) + 1);
+        // Display results
+        for (Map.Entry<String, List<Double>> entry : gradesByType.entrySet()) {
+            String type = entry.getKey();
+            List<Double> averages = entry.getValue();
+
+            if (!averages.isEmpty()) {
+                double average = averages.stream()
+                        .mapToDouble(Double::doubleValue)
+                        .average()
+                        .orElse(0.0);
+
+                System.out.printf("  %-17s: %6.1f%% average (%d students)%n",
+                        type + " Students:", average, averages.size());
             }
         }
+        System.out.println();
+    }
 
-        for (String type : typeCounts.keySet()) {
-            double average = typeSums.get(type) / typeCounts.get(type);
-            System.out.printf("  %-17s: %6.1f%% average (%d students)%n",
-                    type + " Students:", average, typeCounts.get(type));
-        }
+    // New method for real-time statistics (US-5)
+    public Map<String, Object> getRealTimeStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+
+        List<Student> allStudents = studentManager.getStudents();
+        List<Grade> allGrades = gradeManager.getGradesByStudent("all");
+
+        // Basic counts
+        stats.put("totalStudents", allStudents.size());
+        stats.put("totalGrades", allGrades.size());
+        stats.put("timestamp", new Date());
+
+        // Grade distribution
+        Map<String, Long> distribution = allGrades.stream()
+                .collect(Collectors.groupingBy(
+                        grade -> getGradeCategory(grade.getGrade()),
+                        Collectors.counting()
+                ));
+        stats.put("gradeDistribution", distribution);
+
+        // Average grade
+        double averageGrade = allGrades.stream()
+                .mapToDouble(Grade::getGrade)
+                .average()
+                .orElse(0.0);
+        stats.put("averageGrade", averageGrade);
+
+        // Top performers
+        List<Student> topPerformers = allStudents.stream()
+                .sorted((s1, s2) -> {
+                    double avg1 = gradeManager.calculateOverallAverage(s1.getStudentId());
+                    double avg2 = gradeManager.calculateOverallAverage(s2.getStudentId());
+                    return Double.compare(avg2, avg1); // Descending
+                })
+                .limit(5)
+                .collect(Collectors.toList());
+        stats.put("topPerformers", topPerformers);
+
+        // Student type distribution
+        Map<String, Long> typeDistribution = allStudents.stream()
+                .collect(Collectors.groupingBy(
+                        Student::getStudentType,
+                        Collectors.counting()
+                ));
+        stats.put("studentTypeDistribution", typeDistribution);
+
+        return stats;
+    }
+
+    // New method for performance metrics (US-10)
+    public void displayPerformanceMetrics() {
+        System.out.println("\n=== PERFORMANCE METRICS ===");
+
+        List<Student> students = studentManager.getStudents();
+        List<Grade> grades = gradeManager.getGradesByStudent("all");
+
+        System.out.println("Processing " + students.size() + " students and " +
+                grades.size() + " grades...");
+
+        // Benchmark sequential processing
+        long startTime = System.nanoTime();
+
+        double sequentialAverage = grades.stream()
+                .mapToDouble(Grade::getGrade)
+                .average()
+                .orElse(0.0);
+
+        long sequentialTime = System.nanoTime() - startTime;
+
+        // Benchmark parallel processing
+        startTime = System.nanoTime();
+
+        double parallelAverage = grades.parallelStream()
+                .mapToDouble(Grade::getGrade)
+                .average()
+                .orElse(0.0);
+
+        long parallelTime = System.nanoTime() - startTime;
+
+        System.out.printf("Sequential processing: %.2f ms%n", sequentialTime / 1_000_000.0);
+        System.out.printf("Parallel processing:   %.2f ms%n", parallelTime / 1_000_000.0);
+        System.out.printf("Speedup: %.1fx faster%n",
+                (double) sequentialTime / parallelTime);
+        System.out.println("Results identical: " +
+                (Math.abs(sequentialAverage - parallelAverage) < 0.001));
     }
 }

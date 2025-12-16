@@ -1,0 +1,41 @@
+﻿
+STUDENT INFORMATION
+Field,Value
+Student ID,STU008
+Name,"James Anderson"
+Email,"james.anderson@school.net"
+Phone,"+1-555-2003"
+Student Type,Honors
+Enrollment Date,2024-09-01
+Status,Active
+Passing Grade,60.0
+Overall Average,75.14
+
+GRADE DETAILS
+GradeID,StudentID,Subject,SubjectType,Grade,LetterGrade,Date,Timestamp
+GRD050,STU008,"Mathematics",Core,70.00,C-,16-12-2025,2025-12-16 08:23:10
+GRD051,STU008,"Mathematics",Core,90.00,A-,16-12-2025,2025-12-16 08:23:10
+GRD052,STU008,"Computer Science",Core,71.00,C-,16-12-2025,2025-12-16 08:23:10
+GRD053,STU008,"Computer Science",Core,81.00,B-,16-12-2025,2025-12-16 08:23:10
+GRD054,STU008,"Art",Elective,62.00,D,16-12-2025,2025-12-16 08:23:10
+GRD055,STU008,"Economics",Elective,92.00,A-,16-12-2025,2025-12-16 08:23:10
+GRD056,STU008,"Economics",Elective,60.00,D,16-12-2025,2025-12-16 08:23:10
+
+STATISTICS
+Metric,Value
+Total Grades,7
+Overall Average,75.14
+Core Subjects Average,78.00
+Elective Subjects Average,71.33
+
+GRADE DISTRIBUTION
+Grade Range,Count,Percentage
+B (80-89),1,14.29%
+C (70-79),2,28.57%
+D (60-69),2,28.57%
+A (90-100),2,28.57%
+
+PERFORMANCE INDICATORS
+Indicator,Value,Status
+Passing Status,75.14,PASS
+Honors Eligibility,75.14,NOT ELIGIBLE

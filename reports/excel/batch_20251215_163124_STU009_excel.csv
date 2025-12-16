@@ -1,0 +1,40 @@
+﻿
+STUDENT INFORMATION
+Field,Value
+Student ID,STU009
+Name,"Sophia Martinez"
+Email,"sophia.martinez@university.edu"
+Phone,"+1-555-2004"
+Student Type,Honors
+Enrollment Date,2024-09-01
+Status,Active
+Passing Grade,60.0
+Overall Average,80.00
+
+GRADE DETAILS
+GradeID,StudentID,Subject,SubjectType,Grade,LetterGrade,Date,Timestamp
+GRD057,STU009,"Mathematics",Core,76.00,C,15-12-2025,2025-12-15 16:30:09
+GRD058,STU009,"Science",Core,71.00,C-,15-12-2025,2025-12-15 16:30:09
+GRD059,STU009,"History",Core,86.00,B,15-12-2025,2025-12-15 16:30:09
+GRD060,STU009,"English",Core,79.00,C+,15-12-2025,2025-12-15 16:30:09
+GRD061,STU009,"History",Core,93.00,A,15-12-2025,2025-12-15 16:30:09
+GRD062,STU009,"Drama",Elective,78.00,C+,15-12-2025,2025-12-15 16:30:09
+GRD063,STU009,"Economics",Elective,77.00,C+,15-12-2025,2025-12-15 16:30:09
+
+STATISTICS
+Metric,Value
+Total Grades,7
+Overall Average,80.00
+Core Subjects Average,81.00
+Elective Subjects Average,77.50
+
+GRADE DISTRIBUTION
+Grade Range,Count,Percentage
+B (80-89),1,14.29%
+C (70-79),5,71.43%
+A (90-100),1,14.29%
+
+PERFORMANCE INDICATORS
+Indicator,Value,Status
+Passing Status,80.00,PASS
+Honors Eligibility,80.00,NOT ELIGIBLE

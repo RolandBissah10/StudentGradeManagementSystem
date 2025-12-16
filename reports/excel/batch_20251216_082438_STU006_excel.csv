@@ -1,0 +1,40 @@
+﻿
+STUDENT INFORMATION
+Field,Value
+Student ID,STU006
+Name,"Robert Smith"
+Email,"robert.smith@university.edu"
+Phone,"+1-555-2001"
+Student Type,Honors
+Enrollment Date,2024-09-01
+Status,Active
+Passing Grade,60.0
+Overall Average,70.00
+
+GRADE DETAILS
+GradeID,StudentID,Subject,SubjectType,Grade,LetterGrade,Date,Timestamp
+GRD036,STU006,"English",Core,95.00,A,16-12-2025,2025-12-16 08:23:10
+GRD037,STU006,"Computer Science",Core,66.00,D,16-12-2025,2025-12-16 08:23:10
+GRD038,STU006,"History",Core,63.00,D,16-12-2025,2025-12-16 08:23:10
+GRD039,STU006,"Science",Core,62.00,D,16-12-2025,2025-12-16 08:23:10
+GRD040,STU006,"Physical Education",Elective,52.00,F,16-12-2025,2025-12-16 08:23:10
+GRD041,STU006,"Drama",Elective,82.00,B-,16-12-2025,2025-12-16 08:23:10
+
+STATISTICS
+Metric,Value
+Total Grades,6
+Overall Average,70.00
+Core Subjects Average,71.50
+Elective Subjects Average,67.00
+
+GRADE DISTRIBUTION
+Grade Range,Count,Percentage
+B (80-89),1,16.67%
+D (60-69),3,50.00%
+A (90-100),1,16.67%
+F (0-59),1,16.67%
+
+PERFORMANCE INDICATORS
+Indicator,Value,Status
+Passing Status,70.00,PASS
+Honors Eligibility,70.00,NOT ELIGIBLE

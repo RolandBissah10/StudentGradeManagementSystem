@@ -1,0 +1,37 @@
+DETAILED GRADE REPORT
+Generated: 2025-12-16 08:24:38
+=========================================
+
+STUDENT INFORMATION
+ID: STU002
+Name: Michael Chen
+Type: Regular
+Age: 17
+Email: michael.chen@college.org
+Phone: +1-555-1002
+Enrollment Date: 2024-09-01
+Passing Grade: 50.0%
+Status: Active
+
+GRADE HISTORY
+---------------------------------------------------
+GRD ID   | DATE       | SUBJECT         | TYPE     | GRADE   | LETTER
+---------------------------------------------------
+GRD014   | 16-12-2025 | Physical Edu... | Elective |   75.0% | C    
+GRD013   | 16-12-2025 | Economics       | Elective |   65.0% | D    
+GRD012   | 16-12-2025 | Science         | Core     |   73.0% | C    
+GRD011   | 16-12-2025 | Mathematics     | Core     |   77.0% | C+   
+GRD010   | 16-12-2025 | Mathematics     | Core     |   96.0% | A    
+GRD009   | 16-12-2025 | History         | Core     |   87.0% | B+   
+
+STATISTICS
+Total Grades: 6
+Overall Average: 78.8%
+Core Subjects Average: 83.3%
+Elective Subjects Average: 70.0%
+
+GRADE DISTRIBUTION
+B (80-89): 1 grades
+C (70-79): 3 grades
+D (60-69): 1 grades
+A (90-100): 1 grades
