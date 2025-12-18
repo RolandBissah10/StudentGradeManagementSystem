@@ -75,8 +75,7 @@ public class PatternSearchService {
     }
 
     public List<Student> searchByGradePattern(String pattern) {
-        // Search students whose grades match a pattern
-        // Example: ">85" for grades above 85, "70-80" for grades between 70 and 80
+
 
         List<Student> results = new ArrayList<>();
 

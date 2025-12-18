@@ -172,7 +172,6 @@ public class ConcurrentTaskService {
         List<Student> students = studentManager.getStudents();
         students.parallelStream().forEach(student -> {
             // This would recalculate GPA for each student
-            // Implementation depends on your GPA calculation logic
         });
     }
 

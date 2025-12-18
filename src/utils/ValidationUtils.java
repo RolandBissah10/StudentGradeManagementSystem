@@ -33,8 +33,8 @@ public class ValidationUtils {
         boolean valid = STUDENT_ID.matcher(studentId).matches();
         return valid ?
                 ValidationResult.success() :
-                ValidationResult.failure("Invalid Student ID format. Expected: STU### (STU followed by exactly 3 digits)",
-                        "STU001, STU042, STU999");
+                ValidationResult.failure("Invalid Student ID format. Expected: STU##### (STU followed by exactly 5 digits)",
+                        "STU00001, STU00042, STU99999");
     }
 
     public static ValidationResult validateEmail(String email) {

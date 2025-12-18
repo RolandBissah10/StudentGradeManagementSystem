@@ -46,7 +46,6 @@ public class StudentManager {
     }
 
     public Student findStudentByEmail(String email) {
-        // This is O(n) but we can optimize with reverse map if needed
         for (Student student : studentList) {
             if (student.getEmail().equals(email)) {
                 return student;
@@ -133,11 +132,11 @@ public class StudentManager {
 
         // Simulate access times
         long startTime = System.nanoTime();
-        studentMap.get("STU001");
+        studentMap.get("STU00001");
         long hashMapTime = System.nanoTime() - startTime;
 
         startTime = System.nanoTime();
-        studentList.stream().filter(s -> s.getStudentId().equals("STU001")).findFirst();
+        studentList.stream().filter(s -> s.getStudentId().equals("STU00001")).findFirst();
         long listTime = System.nanoTime() - startTime;
 
         System.out.printf("HashMap<String,Student> | %4d | %6.2f ms (O(1))%n",

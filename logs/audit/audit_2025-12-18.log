@@ -32,3 +32,6 @@ timestamp,threadId,operationType,userAction,executionTime(ms),status,details,stu
 "2025-12-18 08:23:17.996","main","MENU_NAV","User selected option: ",0,"SUCCESS","","null"
 "2025-12-18 08:23:20.602","main","MENU_NAV","User selected option: 7",0,"SUCCESS","","null"
 "2025-12-18 08:23:28.444","main","BULK_IMPORT","Bulk import from student_grades_10000",0,"SUCCESS","","null"
+"2025-12-18 10:14:33.188","main","SYSTEM","Directories initialized",0,"SUCCESS","","null"
+"2025-12-18 10:14:34.694","main","SYSTEM_INIT","System initialization complete",1505,"SUCCESS","","null"
+"2025-12-18 10:15:02.164","main","MENU_NAV","User selected option: 1",0,"SUCCESS","","null"
