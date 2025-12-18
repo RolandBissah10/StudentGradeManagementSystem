@@ -30,7 +30,7 @@ public abstract class Student implements Serializable {
 
     private String generateStudentId() {
         studentCounter++;
-        return String.format("STU%03d", studentCounter);
+        return String.format("STU%05d", studentCounter);
     }
 
     public abstract void displayStudentDetails();
