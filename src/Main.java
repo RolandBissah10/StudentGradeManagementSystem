@@ -86,7 +86,7 @@ public class Main {
     private static void initializeSampleData() {
         System.out.println("\n" + "=".repeat(80));
         System.out.println("           STUDENT GRADE MANAGEMENT SYSTEM v3.0");
-        System.out.println("               (Enterprise Edition with Concurrency)");
+//        System.out.println("               (Enterprise Edition with Concurrency)");
         System.out.println("=".repeat(80));
 
         long startTime = System.currentTimeMillis();
@@ -161,7 +161,7 @@ public class Main {
         int regularCount = 0;
         int honorsCount = 0;
 
-        for (int i = 0; i < 25; i++) {
+        for (int i = 0; i < 500; i++) {
             // Generate random student data
             String firstName = firstNames[random.nextInt(firstNames.length)];
             String lastName = lastNames[random.nextInt(lastNames.length)];
