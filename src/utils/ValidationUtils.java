@@ -8,7 +8,7 @@ import java.time.format.DateTimeParseException;
 
 public class ValidationUtils {
     // Compile patterns once for performance (as per PDF requirement)
-    public static final Pattern STUDENT_ID = Pattern.compile("^STU\\d{3}$");
+    public static final Pattern STUDENT_ID = Pattern.compile("^STU\\d{5}$");
     public static final Pattern EMAIL = Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     public static final Pattern PHONE = Pattern.compile(
             "^(\\(\\d{3}\\)\\s\\d{3}-\\d{4}|" +      // (123) 456-7890
