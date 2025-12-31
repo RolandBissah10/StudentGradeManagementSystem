@@ -15,6 +15,28 @@ bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
+
+# Build artifacts
+target/
+*.class
+
+### Reports ###
+reports/
+!reports/.gitkeep
+
+### Logs ###
+logs/
+*.log
+!logs/.gitkeep
+
+### Import/Export directories ###
+imports/processed/
+imports/raw/
+!imports/.gitkeep
+exports/
+!exports/.gitkeep
+
+
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
