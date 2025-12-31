@@ -8,7 +8,7 @@ import java.time.format.DateTimeParseException;
 
 public class ValidationUtils {
     // Compile patterns once for performance (as per PDF requirement)
-    public static final Pattern STUDENT_ID = Pattern.compile("^STU\\d{5}$");
+    public static final Pattern STUDENT_ID = Pattern.compile("^STU\\d{3}$");
     public static final Pattern EMAIL = Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     public static final Pattern PHONE = Pattern.compile(
             "^(\\(\\d{3}\\)\\s\\d{3}-\\d{4}|" +      // (123) 456-7890
@@ -33,8 +33,8 @@ public class ValidationUtils {
         boolean valid = STUDENT_ID.matcher(studentId).matches();
         return valid ?
                 ValidationResult.success() :
-                ValidationResult.failure("Invalid Student ID format. Expected: STU##### (STU followed by exactly 5 digits)",
-                        "STU00001, STU00042, STU99999");
+                ValidationResult.failure("Invalid Student ID format. Expected: STU### (STU followed by exactly 3 digits)",
+                        "STU001, STU042, STU999");
     }
 
     public static ValidationResult validateEmail(String email) {

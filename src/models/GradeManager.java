@@ -1,7 +1,6 @@
 package models;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class GradeManager {
@@ -16,9 +15,6 @@ public class GradeManager {
     private Map<String, Double> studentAveragesCache;
     private Map<String, Map<String, Double>> subjectAveragesCache;
 
-    // Concurrent collections for thread safety
-    private ConcurrentHashMap<String, Boolean> processingStatus;
-
     // Performance tracking
     private long cacheHits = 0;
     private long cacheMisses = 0;
@@ -32,9 +28,13 @@ public class GradeManager {
 
         studentAveragesCache = new HashMap<>();
         subjectAveragesCache = new HashMap<>();
-        processingStatus = new ConcurrentHashMap<>();
     }
 
+    /**
+     * Adds a grade to all collections
+     * Time Complexity: O(1) for HashMap operations, O(1) amortized for LinkedList
+     * Overall: O(1)
+     */
     public void addGrade(Grade grade) {
         String studentId = grade.getStudentId();
         String gradeId = grade.getGradeId();
@@ -238,6 +238,14 @@ public class GradeManager {
     }
 
     public List<Grade> getGradesByStudent(String studentId) {
+        if ("all".equals(studentId)) {
+            // Special case: return all grades from all students
+            List<Grade> allGrades = new ArrayList<>();
+            for (List<Grade> grades : studentGradesMap.values()) {
+                allGrades.addAll(grades);
+            }
+            return allGrades;
+        }
         return new ArrayList<>(studentGradesMap.getOrDefault(studentId, new ArrayList<>()));
     }
 

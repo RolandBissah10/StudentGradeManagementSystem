@@ -58,27 +58,9 @@ public class AuditLogger {
                     escapeCSV(userAction), executionTime, status, escapeCSV(details), studentId);
         }
 
-        String toJSON() {
-            return String.format(
-                    "{\"timestamp\":\"%s\",\"threadId\":\"%s\",\"operation\":\"%s\"," +
-                            "\"action\":\"%s\",\"executionTime\":%d,\"status\":\"%s\"," +
-                            "\"details\":\"%s\",\"studentId\":\"%s\"}",
-                    timestamp, threadId, operationType,
-                    escapeJSON(userAction), executionTime, status, escapeJSON(details), studentId);
-        }
-
         private String escapeCSV(String text) {
             if (text == null) return "";
             return text.replace("\"", "\"\"");
-        }
-
-        private String escapeJSON(String text) {
-            if (text == null) return "";
-            return text.replace("\\", "\\\\")
-                    .replace("\"", "\\\"")
-                    .replace("\n", "\\n")
-                    .replace("\r", "\\r")
-                    .replace("\t", "\\t");
         }
     }
 

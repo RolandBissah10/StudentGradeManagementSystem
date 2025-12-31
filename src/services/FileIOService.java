@@ -323,8 +323,6 @@ public class FileIOService {
             Map<String, Object> report = (Map<String, Object>) ois.readObject();
 
             @SuppressWarnings("unchecked")
-            Map<String, String> studentData = (Map<String, String>) report.get("student");
-            @SuppressWarnings("unchecked")
             List<Map<String, Object>> gradeDataList = (List<Map<String, Object>>) report.get("grades");
 
             List<Grade> grades = new ArrayList<>();

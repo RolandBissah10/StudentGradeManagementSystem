@@ -1,9 +1,5 @@
 import java.io.*;
 import java.nio.file.*;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -21,31 +17,25 @@ public class Main {
 
     // Services
     private static ReportGenerator reportGenerator = new ReportGenerator(studentManager, gradeManager);
-    private static GPACalculator gpaCalculator = new GPACalculator(studentManager, gradeManager);
-    private static StatisticsCalculator statisticsCalculator = new StatisticsCalculator(studentManager, gradeManager);
     private static BulkImportService bulkImportService = new BulkImportService(studentManager, gradeManager);
-    private static SearchService searchService = new SearchService(studentManager, gradeManager);
     private static FileIOService fileIOService = new FileIOService();
     private static ConcurrentTaskService taskService = new ConcurrentTaskService(studentManager, gradeManager, fileIOService);
     private static CacheManager cacheManager = new CacheManager();
     private static AuditLogger auditLogger = AuditLogger.getInstance();
-    private static PatternSearchService patternSearchService = new PatternSearchService(studentManager, gradeManager);
-    private static StreamProcessor streamProcessor = new StreamProcessor(studentManager, gradeManager);
-    private static StatisticsDashboard statisticsDashboard;
     private static WatchServiceMonitor watchServiceMonitor;
+    private static GPACalculator gpaCalculator = new GPACalculator(studentManager, gradeManager);
+    private static StatisticsDashboard statisticsDashboard = new StatisticsDashboard(studentManager, gradeManager);
+    private static PatternSearchService patternSearchService = new PatternSearchService(studentManager, gradeManager);
+    private static SearchService searchService = new SearchService(studentManager, gradeManager);
+    private static StatisticsCalculator statisticsCalculator = new StatisticsCalculator(studentManager, gradeManager);
+    private static StreamProcessor streamProcessor = new StreamProcessor(studentManager, gradeManager);
+    private static ScheduledExecutorService scheduledTasks = Executors.newScheduledThreadPool(4);
 
     private static Scanner scanner = new Scanner(System.in);
-    private static ScheduledExecutorService scheduledTasks;
 
     static {
         try {
-            statisticsDashboard = new StatisticsDashboard(studentManager, gradeManager, cacheManager);
             watchServiceMonitor = new WatchServiceMonitor("imports");
-            scheduledTasks = Executors.newScheduledThreadPool(3);
-
-            // Initialize scheduled tasks
-            initializeScheduledTasks();
-
         } catch (Exception e) {
             System.err.println("Error initializing services: " + e.getMessage());
             e.printStackTrace();
@@ -161,7 +151,7 @@ public class Main {
         int regularCount = 0;
         int honorsCount = 0;
 
-        for (int i = 0; i < 500; i++) {
+        for (int i = 0; i < 100; i++) {
             // Generate random student data
             String firstName = firstNames[random.nextInt(firstNames.length)];
             String lastName = lastNames[random.nextInt(lastNames.length)];
@@ -253,83 +243,17 @@ public class Main {
                 " (" + String.format("%.1f%%", failingCount * 100.0 / students.size()) + ")");
     }
 
-    private static void initializeScheduledTasks() {
-        // Daily GPA recalculation at 3:30 AM
-        scheduledTasks.scheduleAtFixedRate(() -> {
-            try {
-                auditLogger.logSimple("SCHEDULED_TASK", "Daily GPA recalculation started", null);
-                System.out.println("\n[" + new Date() + "] Starting scheduled GPA recalculation...");
-                recalculateAllGPAs();
-                auditLogger.logSimple("SCHEDULED_TASK", "Daily GPA recalculation completed", null);
-            } catch (Exception e) {
-                auditLogger.logError("SCHEDULED_TASK", "Daily GPA recalculation failed", e.getMessage(), null);
-            }
-        }, calculateInitialDelay(3, 30), 24 * 60 * 60 * 1000, TimeUnit.MILLISECONDS);
-
-        // Hourly statistics cache refresh
-        scheduledTasks.scheduleAtFixedRate(() -> {
-            try {
-                cacheManager.warmCache(studentManager.getStudents());
-                auditLogger.logSimple("SCHEDULED_TASK", "Hourly cache refresh completed", null);
-            } catch (Exception e) {
-                auditLogger.logError("SCHEDULED_TASK", "Hourly cache refresh failed", e.getMessage(), null);
-            }
-        }, 60, 60, TimeUnit.MINUTES);
-
-        // Daily backup at 2:00 AM
-        scheduledTasks.scheduleAtFixedRate(() -> {
-            try {
-                performDailyBackup();
-            } catch (Exception e) {
-                auditLogger.logError("SCHEDULED_TASK", "Daily backup failed", e.getMessage(), null);
-            }
-        }, calculateInitialDelay(2, 0), 24 * 60 * 60 * 1000, TimeUnit.MILLISECONDS);
-
-        System.out.println("✓ Scheduled tasks initialized");
-    }
-
-    private static long calculateInitialDelay(int hour, int minute) {
-        Calendar now = Calendar.getInstance();
-        Calendar target = Calendar.getInstance();
-        target.set(Calendar.HOUR_OF_DAY, hour);
-        target.set(Calendar.MINUTE, minute);
-        target.set(Calendar.SECOND, 0);
-
-        if (target.before(now)) {
-            target.add(Calendar.DATE, 1);
-        }
-
-        return target.getTimeInMillis() - now.getTimeInMillis();
-    }
-
     private static void recalculateAllGPAs() {
         List<Student> students = studentManager.getStudents();
         System.out.println("Recalculating GPAs for " + students.size() + " students...");
 
         // Use parallel stream for concurrent processing
         students.parallelStream().forEach(student -> {
-            double gpa = gpaCalculator.calculateGPA(student.getStudentId(), false);
+            gpaCalculator.calculateGPA(student.getStudentId(), false);
             // Update student GPA in database (simulated)
         });
 
         System.out.println("✓ GPA recalculation completed");
-    }
-
-    private static void performDailyBackup() {
-        try {
-            LocalDate today = LocalDate.now();
-            Path backupDir = Paths.get("backups", today.toString());
-            Files.createDirectories(backupDir);
-
-            // Simulate backup process
-            System.out.println("[" + LocalDateTime.now() + "] Performing daily backup...");
-            Thread.sleep(2000); // Simulate backup time
-
-            auditLogger.logSimple("BACKUP", "Daily backup completed", null);
-            System.out.println("✓ Daily backup completed to: " + backupDir);
-        } catch (Exception e) {
-            System.err.println("Backup error: " + e.getMessage());
-        }
     }
 
     private static void displayMainMenu() {
@@ -383,39 +307,30 @@ public class Main {
 
         System.out.println("\nANALYTICS & REPORTING");
         System.out.println("  9. Calculate Student GPA");
-        System.out.println("  10. View Class Statistics");
-        System.out.println("  11. Real-Time Statistics Dashboard");
-        System.out.println("  12. Generate Batch Reports ");
-        System.out.println("  13. Stream Processing Analytics");
+        System.out.println(" 10. View Class Statistics");
+        System.out.println(" 11. Real-Time Statistics Dashboard");
+        System.out.println(" 12. Generate Batch Reports");
+        System.out.println(" 13. Stream Processing Analytics");
 
         System.out.println("\nSEARCH & QUERY");
-        System.out.println("  14. Search Students");
-        System.out.println("  15. Pattern-Based Search");
-        System.out.println("  16. Query Grade History");
+        System.out.println(" 14. Search Students");
+        System.out.println(" 15. Pattern-Based Search");
+        System.out.println(" 16. Query Grade History");
 
         System.out.println("\nADVANCED FEATURES");
-        System.out.println("  17. Schedule Automated Tasks ");
-        System.out.println("  18. View System Performance");
-        System.out.println("  19. Cache Management");
-        System.out.println("  20. Audit Trail Viewer");
-        System.out.println("  21. Exit System");
+        System.out.println(" 17. Schedule Automated Tasks");
+        System.out.println(" 18. View System Performance");
+        System.out.println(" 19. Cache Management");
+        System.out.println(" 20. Audit Trail Viewer");
 
-        System.out.print("\nEnter choice (1-21): ");
+        System.out.print("\nEnter choice (1-20) or 21 to Exit: ");
     }
 
     private static void displayBackgroundTasks() {
         List<String> activeTasks = new ArrayList<>();
 
-        if (statisticsDashboard.isRunning()) {
-            activeTasks.add("Dashboard (" + (statisticsDashboard.isRunning() ? "RUNNING" : "PAUSED") + ")");
-        }
-
         if (watchServiceMonitor != null && watchServiceMonitor.isRunning()) {
             activeTasks.add("File Watcher");
-        }
-
-        if (!scheduledTasks.isShutdown()) {
-            activeTasks.add("Scheduled Tasks");
         }
 
         if (!activeTasks.isEmpty()) {
@@ -453,7 +368,7 @@ public class Main {
                     System.out.println("\nShutting down system...");
                     return false;
                 default:
-                    System.out.println("Invalid choice! Please enter 1-21.");
+                    System.out.println("Invalid choice! Please enter 1-20 or 21 to exit.");
             }
         } catch (Exception e) {
             System.err.println("Error in menu option " + choice + ": " + e.getMessage());
@@ -981,6 +896,152 @@ public class Main {
         }
     }
 
+    private static void calculateStudentGPA() {
+        System.out.println("\n" + "=".repeat(80));
+        System.out.println("              CALCULATE STUDENT GPA");
+        System.out.println("=".repeat(80));
+
+        System.out.print("Enter Student ID: ");
+        String studentId = scanner.nextLine().trim().toUpperCase();
+
+        try {
+            double gpa = gpaCalculator.calculateGPA(studentId, true);
+            System.out.printf("\n✓ GPA calculated: %.2f%n", gpa);
+            auditLogger.logSimple("GPA_CALCULATION", "Calculated GPA for " + studentId, studentId);
+        } catch (Exception e) {
+            System.err.println("Error calculating GPA: " + e.getMessage());
+            auditLogger.logError("GPA_CALCULATION", "Failed to calculate GPA", e.getMessage(), studentId);
+        }
+    }
+
+    private static void viewClassStatistics() {
+        System.out.println("\n" + "=".repeat(80));
+        System.out.println("              CLASS STATISTICS");
+        System.out.println("=".repeat(80));
+
+        try {
+            statisticsCalculator.displayClassStatistics();
+            auditLogger.logSimple("CLASS_STATISTICS", "Viewed class statistics", null);
+        } catch (Exception e) {
+            System.err.println("Error displaying statistics: " + e.getMessage());
+            auditLogger.logError("CLASS_STATISTICS", "Failed to display statistics", e.getMessage(), null);
+        }
+    }
+
+    private static void searchStudents() {
+        System.out.println("\n" + "=".repeat(80));
+        System.out.println("              STUDENT SEARCH");
+        System.out.println("=".repeat(80));
+
+        System.out.println("Search by:");
+        System.out.println("1. Student ID");
+        System.out.println("2. Name");
+        System.out.println("3. Email Domain");
+        System.out.print("Select search type (1-3): ");
+
+        String type = scanner.nextLine();
+        System.out.print("Enter search term: ");
+        String term = scanner.nextLine().trim();
+
+        try {
+            List<Student> results;
+            switch (type) {
+                case "1":
+                    results = searchService.searchByStudentId(term.toUpperCase());
+                    break;
+                case "2":
+                    results = searchService.searchByName(term);
+                    break;
+                case "3":
+                    results = searchService.searchByEmailDomain(term);
+                    break;
+                default:
+                    System.out.println("Invalid search type!");
+                    return;
+            }
+            searchService.displaySearchResults(results);
+            auditLogger.logSimple("STUDENT_SEARCH", "Found " + results.size() + " students", null);
+        } catch (Exception e) {
+            System.err.println("Search error: " + e.getMessage());
+            auditLogger.logError("STUDENT_SEARCH", "Search failed", e.getMessage(), null);
+        }
+    }
+
+    private static void streamProcessingAnalytics() {
+        System.out.println("\n" + "=".repeat(80));
+        System.out.println("              STREAM PROCESSING ANALYTICS");
+        System.out.println("=".repeat(80));
+
+        try {
+            streamProcessor.displayStreamCapabilities();
+            auditLogger.logSimple("STREAM_ANALYTICS", "Performed stream processing analytics", null);
+        } catch (Exception e) {
+            System.err.println("Stream analytics error: " + e.getMessage());
+            auditLogger.logError("STREAM_ANALYTICS", "Stream analytics failed", e.getMessage(), null);
+        }
+    }
+
+    private static void startRealTimeDashboard() {
+        System.out.println("\n" + "=".repeat(80));
+        System.out.println("              REAL-TIME DASHBOARD");
+        System.out.println("=".repeat(80));
+
+        try {
+            statisticsDashboard.startDashboard(5); // Refresh every 5 seconds
+            System.out.println("✓ Real-time dashboard started");
+            auditLogger.logSimple("DASHBOARD", "Started real-time dashboard", null);
+        } catch (Exception e) {
+            System.err.println("Dashboard error: " + e.getMessage());
+            auditLogger.logError("DASHBOARD", "Failed to start dashboard", e.getMessage(), null);
+        }
+    }
+
+    private static void scheduleAutomatedTasks() {
+        System.out.println("\n" + "=".repeat(80));
+        System.out.println("              SCHEDULE AUTOMATED TASKS");
+        System.out.println("=".repeat(80));
+
+        System.out.println("Available tasks:");
+        System.out.println("1. Daily GPA Recalculation");
+        System.out.println("2. Weekly Statistics Update");
+        System.out.println("3. Hourly Cache Cleanup");
+        System.out.print("Select task (1-3): ");
+
+        String task = scanner.nextLine();
+
+        try {
+            switch (task) {
+                case "1":
+                    scheduledTasks.scheduleAtFixedRate(
+                            () -> recalculateAllGPAs(),
+                            0, 24, TimeUnit.HOURS
+                    );
+                    System.out.println("✓ Daily GPA recalculation scheduled");
+                    break;
+                case "2":
+                    scheduledTasks.scheduleAtFixedRate(
+                            () -> statisticsCalculator.displayClassStatistics(),
+                            0, 7 * 24, TimeUnit.HOURS
+                    );
+                    System.out.println("✓ Weekly statistics update scheduled");
+                    break;
+                case "3":
+                    scheduledTasks.scheduleAtFixedRate(
+                            () -> cacheManager.invalidateAll(),
+                            0, 1, TimeUnit.HOURS
+                    );
+                    System.out.println("✓ Hourly cache cleanup scheduled");
+                    break;
+                default:
+                    System.out.println("Invalid task selection");
+            }
+            auditLogger.logSimple("SCHEDULED_TASKS", "Scheduled automated task: " + task, null);
+        } catch (Exception e) {
+            System.err.println("Scheduling error: " + e.getMessage());
+            auditLogger.logError("SCHEDULED_TASKS", "Failed to schedule task", e.getMessage(), null);
+        }
+    }
+
     private static void importData() {
         System.out.println("\n" + "=".repeat(80));
         System.out.println("              IMPORT DATA");
@@ -1087,113 +1148,6 @@ public class Main {
         } catch (Exception e) {
             System.err.println("Failed to start file watcher: " + e.getMessage());
             auditLogger.logError("FILE_WATCHER", "Failed to start", e.getMessage(), null);
-        }
-    }
-
-    private static void calculateStudentGPA() {
-        System.out.println("\n" + "=".repeat(80));
-        System.out.println("              CALCULATE STUDENT GPA");
-        System.out.println("=".repeat(80));
-
-        System.out.print("Enter Student ID: ");
-        String studentId = scanner.nextLine().trim().toUpperCase();
-
-        try {
-            // Check if student exists
-            Student student = studentManager.findStudent(studentId);
-            if (student == null) {
-                throw new StudentNotFoundException(studentId);
-            }
-
-            long startTime = System.currentTimeMillis();
-            gpaCalculator.displayGPABreakdown(studentId);
-            long executionTime = System.currentTimeMillis() - startTime;
-
-            System.out.printf("\nGPA calculation completed in %d ms%n", executionTime);
-
-            auditLogger.logWithTime("CALCULATE_GPA",
-                    "Calculated GPA for " + studentId,
-                    executionTime, studentId);
-
-        } catch (StudentNotFoundException e) {
-            System.out.println("\n✗ ERROR: " + e.getMessage());
-            auditLogger.logError("CALCULATE_GPA", "Student not found: " + studentId, e.getMessage(), studentId);
-        } catch (Exception e) {
-            System.err.println("Error calculating GPA: " + e.getMessage());
-            auditLogger.logError("CALCULATE_GPA", "Failed to calculate GPA", e.getMessage(), studentId);
-        }
-    }
-
-    private static void viewClassStatistics() {
-        System.out.println("\n" + "=".repeat(80));
-        System.out.println("              CLASS STATISTICS");
-        System.out.println("=".repeat(80));
-
-        try {
-            long startTime = System.currentTimeMillis();
-            statisticsCalculator.displayClassStatistics();
-            long executionTime = System.currentTimeMillis() - startTime;
-
-            System.out.printf("\nStatistics generated in %d ms%n", executionTime);
-
-            auditLogger.logWithTime("VIEW_STATISTICS",
-                    "Viewed class statistics",
-                    executionTime, null);
-        } catch (Exception e) {
-            System.err.println("Error displaying statistics: " + e.getMessage());
-            auditLogger.logError("VIEW_STATISTICS", "Failed to display statistics", e.getMessage(), null);
-        }
-    }
-
-    private static void startRealTimeDashboard() {
-        System.out.println("\n" + "=".repeat(80));
-        System.out.println("              REAL-TIME STATISTICS DASHBOARD");
-        System.out.println("=".repeat(80));
-
-        try {
-            statisticsDashboard.startDashboard(5); // 5-second refresh interval
-            auditLogger.logSimple("DASHBOARD", "Started real-time dashboard", null);
-
-            // Interactive command loop
-            while (statisticsDashboard.isRunning()) {
-                String command = scanner.nextLine().toLowerCase();
-
-                switch (command) {
-                    case "q":
-                        statisticsDashboard.stop();
-                        System.out.println("Returning to main menu...");
-                        auditLogger.logSimple("DASHBOARD", "Stopped real-time dashboard", null);
-                        return;
-                    case "r":
-                        statisticsDashboard.displayDashboard();
-                        break;
-                    case "p":
-                        statisticsDashboard.pause();
-                        System.out.println("Dashboard paused. Press 'R' to resume.");
-                        break;
-                    case "resume":
-                        statisticsDashboard.resume();
-                        statisticsDashboard.displayDashboard();
-                        break;
-                    case "s":
-                        statisticsDashboard.displayPerformanceMetrics();
-                        break;
-                    case "c":
-                        statisticsDashboard.displayPerformanceMetrics();
-                        break;
-                    case "m":
-                        statisticsDashboard.displayMemoryChart();
-                        break;
-                    case "h":
-                        statisticsDashboard.displayHelp();
-                        break;
-                    default:
-                        System.out.println("Unknown command. Use Q, R, P, S, C, M, or H.");
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Error starting dashboard: " + e.getMessage());
-            auditLogger.logError("DASHBOARD", "Failed to start dashboard", e.getMessage(), null);
         }
     }
 
@@ -1317,7 +1271,7 @@ public class Main {
             System.out.println("═".repeat(80));
 
             // Create and start batch report service
-            BatchReportService batchService = new BatchReportService(studentManager, gradeManager, reportGenerator);
+            BatchReportService batchService = new BatchReportService(reportGenerator);
 
             // Choose between concurrent or simple generation
             System.out.print("\nUse concurrent processing? (Y/N): ");
@@ -1333,163 +1287,6 @@ public class Main {
             System.err.println("Error generating batch reports: " + e.getMessage());
             e.printStackTrace();
             auditLogger.logError("BATCH_REPORTS", "Failed to generate batch reports", e.getMessage(), null);
-        }
-    }
-
-    private static void streamProcessingAnalytics() {
-        System.out.println("\n" + "=".repeat(80));
-        System.out.println("              STREAM PROCESSING ANALYTICS");
-        System.out.println("=".repeat(80));
-
-        try {
-            System.out.println("\nStream Processing Options:");
-            System.out.println("1. Calculate Subject Averages");
-            System.out.println("2. Grade Distribution Analysis");
-            System.out.println("3. Performance Benchmark");
-            System.out.println("4. Top Performing Students");
-            System.out.println("5. All Analytics");
-            System.out.print("Select option (1-5): ");
-
-            String choice = scanner.nextLine();
-
-            long startTime = System.currentTimeMillis();
-
-            switch (choice) {
-                case "1":
-                    Map<String, Double> subjectAverages = streamProcessor.calculateAverageBySubject();
-                    System.out.println("\nSubject Averages:");
-                    subjectAverages.forEach((subject, avg) ->
-                            System.out.printf("  %-20s: %6.1f%%%n", subject, avg));
-                    break;
-
-                case "2":
-                    Map<String, Object> distribution = streamProcessor.analyzeGradeDistribution();
-                    System.out.println("\nGrade Distribution Analysis:");
-                    System.out.println("Total Grades: " + distribution.get("totalGrades"));
-                    System.out.printf("Average Grade: %.1f%%%n", distribution.get("average"));
-                    System.out.println("\nDistribution:");
-                    @SuppressWarnings("unchecked")
-                    Map<String, Long> distMap = (Map<String, Long>) distribution.get("distribution");
-                    distMap.forEach((category, count) ->
-                            System.out.printf("  %-15s: %d grades%n", category, count));
-                    break;
-
-                case "3":
-                    streamProcessor.benchmarkStreamPerformance();
-                    break;
-
-                case "4":
-                    List<Student> topStudents = streamProcessor.getTopStudents(5, "gpa");
-                    System.out.println("\nTop 5 Performing Students:");
-                    for (int i = 0; i < topStudents.size(); i++) {
-                        Student student = topStudents.get(i);
-                        double avg = gradeManager.calculateOverallAverage(student.getStudentId());
-                        System.out.printf("%d. %s - %s - %.1f%%%n",
-                                i + 1, student.getStudentId(), student.getName(), avg);
-                    }
-                    break;
-
-                case "5":
-                    System.out.println("\n=== COMPREHENSIVE STREAM ANALYTICS ===");
-                    streamProcessor.displayStreamCapabilities();
-                    System.out.println();
-                    streamProcessor.benchmarkStreamPerformance();
-                    break;
-
-                default:
-                    System.out.println("Invalid choice!");
-                    return;
-            }
-
-            long executionTime = System.currentTimeMillis() - startTime;
-            System.out.printf("\nAnalytics completed in %d ms%n", executionTime);
-
-            auditLogger.logWithTime("STREAM_ANALYTICS",
-                    "Stream processing analytics: option " + choice,
-                    executionTime, null);
-
-        } catch (Exception e) {
-            System.err.println("Error in stream processing: " + e.getMessage());
-            auditLogger.logError("STREAM_ANALYTICS", "Stream processing failed", e.getMessage(), null);
-        }
-    }
-
-    private static void searchStudents() {
-        System.out.println("\n" + "=".repeat(80));
-        System.out.println("              SEARCH STUDENTS");
-        System.out.println("=".repeat(80));
-
-        try {
-            System.out.println("\nSearch Options:");
-            System.out.println("1. By Student ID");
-            System.out.println("2. By Name (partial match)");
-            System.out.println("3. By Grade Range");
-            System.out.println("4. By Student Type");
-            System.out.println("5. By Enrollment Date Range");
-            System.out.print("Select option (1-5): ");
-
-            String option = scanner.nextLine();
-            List<Student> results = new ArrayList<>();
-
-            long startTime = System.currentTimeMillis();
-
-            switch (option) {
-                case "1":
-                    System.out.print("Enter Student ID: ");
-                    String studentId = scanner.nextLine().trim().toUpperCase();
-                    results = searchService.searchByStudentId(studentId);
-                    break;
-
-                case "2":
-                    System.out.print("Enter name (partial or full): ");
-                    String name = scanner.nextLine().trim();
-                    results = searchService.searchByName(name);
-                    break;
-
-                case "3":
-                    System.out.print("Enter minimum grade (0-100): ");
-                    double minGrade = Double.parseDouble(scanner.nextLine());
-                    System.out.print("Enter maximum grade (0-100): ");
-                    double maxGrade = Double.parseDouble(scanner.nextLine());
-                    results = searchService.searchByGradeRange(minGrade, maxGrade);
-                    break;
-
-                case "4":
-                    System.out.print("Enter student type (Regular/Honors): ");
-                    String type = scanner.nextLine().trim();
-                    results = searchService.searchByStudentType(type);
-                    break;
-
-                case "5":
-                    System.out.print("Enter start date (YYYY-MM-DD): ");
-                    String startDate = scanner.nextLine().trim();
-                    System.out.print("Enter end date (YYYY-MM-DD): ");
-                    String endDate = scanner.nextLine().trim();
-                    results = searchService.searchByEnrollmentDateRange(startDate, endDate);
-                    break;
-
-                default:
-                    System.out.println("Invalid option!");
-                    return;
-            }
-
-            long executionTime = System.currentTimeMillis() - startTime;
-
-            if (results.isEmpty()) {
-                System.out.println("\nNo students found matching your criteria.");
-            } else {
-                searchService.displaySearchResults(results);
-                System.out.printf("\nSearch completed in %d ms%n", executionTime);
-                System.out.println("Found " + results.size() + " students");
-            }
-
-            auditLogger.logWithTime("SEARCH_STUDENTS",
-                    "Basic search: option " + option + ", found " + results.size() + " results",
-                    executionTime, null);
-
-        } catch (Exception e) {
-            System.err.println("Search error: " + e.getMessage());
-            auditLogger.logError("SEARCH_STUDENTS", "Search failed", e.getMessage(), null);
         }
     }
 
@@ -1678,13 +1475,8 @@ public class Main {
 
         String processMode = scanner.nextLine();
 
-        // Create student IDs list
-        List<String> studentIds = matchedStudents.stream()
-                .map(Student::getStudentId)
-                .collect(Collectors.toList());
-
         // Create BatchReportService
-        BatchReportService batchService = new BatchReportService(studentManager, gradeManager, reportGenerator);
+        BatchReportService batchService = new BatchReportService(reportGenerator);
 
         try {
             if (processMode.equals("2")) {
@@ -1805,7 +1597,7 @@ public class Main {
             for (Student student : matchedStudents) {
                 try {
                     // Personalize the email
-                    String personalizedBody = template
+                    template
                             .replace("{name}", student.getName())
                             .replace("{average}", String.format("%.1f", gradeManager.calculateOverallAverage(student.getStudentId())))
                             .replace("{status}", student.getStatus());
@@ -2037,170 +1829,6 @@ public class Main {
         });
     }
 
-    private static void scheduleAutomatedTasks() {
-        System.out.println("\n" + "=".repeat(80));
-        System.out.println("              ACTIVE SCHEDULES");
-        System.out.println("=".repeat(80));
-
-        // Display existing schedules (simplified version from image)
-        System.out.println("\n1. [DAILY] Backup Database");
-        System.out.println("   Schedule: Every day at 01:00 AM");
-        System.out.println("   Last Run: 2023-11-03 01:00:15");
-        System.out.println("   Next Run: 2023-11-04 01:00:00");
-        System.out.println("   Status: / Success");
-
-        System.out.println("\n2. [HOURLY] Update Statistics Cache");
-        System.out.println("   Schedule: Every hour at :00");
-        System.out.println("   Last Run: 2023-11-03 14:00:03");
-        System.out.println("   Next Run: 2023-11-03 15:00:00");
-        System.out.println("   Status: + Running (23% complete)");
-
-        System.out.println("\n3. [WEEKLY] Generate Progress Reports");
-        System.out.println("   Schedule: Every Monday at 08:00 AM");
-        System.out.println("   Last Run: 2023-11-02 08:00:12");
-        System.out.println("   Next Run: 2023-11-04 08:00:00");
-        System.out.println("   Status: / Success");
-
-        System.out.println("\nAdd New Scheduled Task:");
-        System.out.println("1. Daily GPA Recalculation");
-        System.out.println("2. Weekly Grade Report Email");
-        System.out.println("3. Monthly Performance Summary");
-        System.out.println("4. Twenty Data Sync");
-        System.out.println("5. Custom Schedule");
-        System.out.println("6. Cancel");
-        System.out.print("\nSelect option (1-6): ");
-
-        try {
-            String choice = scanner.nextLine();
-
-            if (choice.equals("6")) {
-                System.out.println("Operation cancelled.");
-                return;
-            }
-
-            if (!choice.equals("1")) {
-                System.out.println("Currently only GPA Recalculation is implemented.");
-                return;
-            }
-
-            System.out.println("\n" + "=".repeat(80));
-            System.out.println("        CONFIGURE: DaLIV GPA Recalculation");
-            System.out.println("=".repeat(80));
-
-            System.out.println("\nExecution Time:");
-            System.out.print("Enter hour (0-23): ");
-            int hour = Integer.parseInt(scanner.nextLine());
-
-            System.out.print("Enter minute (0-59): ");
-            int minute = Integer.parseInt(scanner.nextLine());
-
-            System.out.println("\nTarget Students:");
-            System.out.println("1. All Students");
-            System.out.println("2. Honors Students Only");
-            System.out.println("3. Students with Grade Changes");
-            System.out.print("\nSelect (1-3): ");
-            String targetChoice = scanner.nextLine();
-
-            String scope;
-            switch (targetChoice) {
-                case "1": scope = "All Students"; break;
-                case "2": scope = "Honors Students Only"; break;
-                case "3": scope = "Students with Grade Changes"; break;
-                default: scope = "All Students";
-            }
-
-            System.out.println("\nThread Pool Configuration:");
-            System.out.println("Recommended: 4 threads for 25 students");
-            System.out.print("\nEnter thread count (1-8): ");
-            int threadCount = Integer.parseInt(scanner.nextLine());
-
-            System.out.println("\nNotification Settings:");
-            System.out.println("1. Email summary on completion");
-            System.out.println("2. Log to file only");
-            System.out.println("3. Both");
-            System.out.print("\nSelect (1-3): ");
-            String notifyChoice = scanner.nextLine();
-
-            String notifications = "";
-            String recipient = "";
-
-            switch (notifyChoice) {
-                case "1":
-                    notifications = "Email only";
-                    System.out.print("\nEnter notification email: ");
-                    recipient = scanner.nextLine();
-                    break;
-                case "2":
-                    notifications = "Log file only";
-                    break;
-                case "3":
-                    notifications = "Email + Log file";
-                    System.out.print("\nEnter notification email: ");
-                    recipient = scanner.nextLine();
-                    break;
-                default:
-                    notifications = "Log file only";
-            }
-
-            System.out.println("\n/ Validation passed");
-
-            System.out.println("\n" + "=".repeat(80));
-            System.out.println("        TASK CONFIGURATION SUMMARY");
-            System.out.println("=".repeat(80));
-
-            System.out.println("\nTask: DaLIV GPA Recalculation");
-            System.out.println("Schedule: Every day at " + String.format("%02d:%02d", hour, minute) + " AM");
-            System.out.println("Scope: " + scope + " (25)");
-            System.out.println("Threads: " + threadCount + " (partial execution)");
-            System.out.println("Notifications: " + notifications);
-            if (!recipient.isEmpty()) {
-                System.out.println("Recipient: " + recipient);
-            }
-
-            // Fixed values from image
-            System.out.println("\nEstimated Execution Time: ~2 minutes");
-            System.out.println("Resource Usage: LOW");
-
-            System.out.print("\nConfirm schedule? (Y/N): ");
-            String confirm = scanner.nextLine().toUpperCase();
-
-            if (confirm.equals("Y")) {
-                System.out.println("\n/ Task scheduled successfully!");
-                System.out.println("Task ID: TASK-008");
-                System.out.println("Scheduled Thread: JUNKING");
-
-                // Calculate next execution (simplified - next day at specified time)
-                LocalDateTime now = LocalDateTime.now();
-                LocalDateTime nextRun = now.withHour(hour).withMinute(minute).withSecond(0);
-                if (nextRun.isBefore(now)) {
-                    nextRun = nextRun.plusDays(1);
-                }
-
-                Duration delay = Duration.between(now, nextRun);
-                long hours = delay.toHours();
-                long minutesRemaining = delay.toMinutes() % 60;
-                long secondsRemaining = delay.getSeconds() % 60;
-
-                System.out.println("Next Execution: " + nextRun.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-                System.out.println("Initial Delay: " + hours + "h " + minutesRemaining + "m " + secondsRemaining + "s");
-                System.out.println("\nThe task will run automatically in the background.");
-
-                auditLogger.logSimple("SCHEDULED_TASK",
-                        "Scheduled GPA recalculation task TASK-008 at " +
-                                String.format("%02d:%02d", hour, minute), null);
-            } else {
-                System.out.println("Schedule cancelled.");
-            }
-
-        } catch (NumberFormatException e) {
-            System.err.println("Error: Invalid number format entered.");
-            auditLogger.logError("SCHEDULE_TASK", "Invalid input format", e.getMessage(), null);
-        } catch (Exception e) {
-            System.err.println("Error scheduling task: " + e.getMessage());
-            auditLogger.logError("SCHEDULE_TASK", "Failed to schedule task", e.getMessage(), null);
-        }
-    }
-
     private static void viewSystemPerformance() {
         System.out.println("\n" + "=".repeat(80));
         System.out.println("              SYSTEM PERFORMANCE MONITOR");
@@ -2415,60 +2043,21 @@ public class Main {
         }
     }
 
-    private static void manageCache() {
+    private static void viewAuditTrail() {
         System.out.println("\n" + "=".repeat(80));
-        System.out.println("              CACHE MANAGEMENT");
+        System.out.println("              AUDIT TRAIL VIEWER");
         System.out.println("=".repeat(80));
 
         try {
-            System.out.println("\nCache Operations:");
-            System.out.println("1. Clear All Caches");
-            System.out.println("2. View Cache Statistics");
-            System.out.println("3. Warm Cache (Pre-load data)");
-            System.out.println("4. Clear Pattern Cache");
-            System.out.print("Select operation (1-4): ");
-
-            String choice = scanner.nextLine();
-
-            switch (choice) {
-                case "1":
-                    cacheManager.invalidateAll();
-                    gpaCalculator.clearCache();
-                    patternSearchService.clearPatternCache();
-                    System.out.println("\n✓ All caches cleared!");
-                    auditLogger.logSimple("CACHE", "All caches cleared", null);
-                    break;
-
-                case "2":
-                    System.out.println("\nCACHE STATISTICS:");
-                    System.out.println("-".repeat(50));
-                    cacheManager.displayCacheStatistics();
-                    break;
-
-                case "3":
-                    System.out.println("\nWarming caches...");
-                    cacheManager.warmCache(studentManager.getStudents());
-                    gpaCalculator.warmCache();
-                    System.out.println("✓ All caches warmed!");
-                    auditLogger.logSimple("CACHE", "Caches warmed", null);
-                    break;
-
-                case "4":
-                    patternSearchService.clearPatternCache();
-                    System.out.println("\n✓ Pattern cache cleared!");
-                    auditLogger.logSimple("CACHE", "Pattern cache cleared", null);
-                    break;
-
-                default:
-                    System.out.println("Invalid choice!");
-            }
+            auditLogger.displayRecentLogs(20); // Show last 20 logs
+            auditLogger.logSimple("AUDIT_VIEW", "Viewed audit trail", null);
         } catch (Exception e) {
-            System.err.println("Cache management error: " + e.getMessage());
-            auditLogger.logError("CACHE_MANAGEMENT", "Cache operation failed", e.getMessage(), null);
+            System.err.println("Audit trail error: " + e.getMessage());
+            auditLogger.logError("AUDIT_VIEW", "Failed to view audit trail", e.getMessage(), null);
         }
     }
 
-    private static void viewAuditTrail() {
+    private static void manageCache() {
         System.out.println("\n" + "=".repeat(80));
         System.out.println("              AUDIT TRAIL VIEWER");
         System.out.println("=".repeat(80));

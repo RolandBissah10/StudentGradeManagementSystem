@@ -1,7 +1,6 @@
 package services;
 
 import models.*;
-import exceptions.ExportException;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -10,6 +9,39 @@ import java.time.format.DateTimeFormatter;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ConcurrentTaskService {
+    // Inner class for priority-based task scheduling
+    public static class ScheduledTask implements Comparable<ScheduledTask> {
+        private String taskId;
+        private String description;
+        private Runnable task;
+        private int priority; // 1 = highest, 10 = lowest
+        private LocalDateTime scheduledTime;
+
+        public ScheduledTask(String taskId, String description, Runnable task, int priority, LocalDateTime scheduledTime) {
+            this.taskId = taskId;
+            this.description = description;
+            this.task = task;
+            this.priority = priority;
+            this.scheduledTime = scheduledTime;
+        }
+
+        @Override
+        public int compareTo(ScheduledTask other) {
+            // Higher priority (lower number) comes first
+            // If same priority, earlier scheduled time comes first
+            if (this.priority != other.priority) {
+                return Integer.compare(this.priority, other.priority);
+            }
+            return this.scheduledTime.compareTo(other.scheduledTime);
+        }
+
+        // Getters
+        public String getTaskId() { return taskId; }
+        public String getDescription() { return description; }
+        public Runnable getTask() { return task; }
+        public int getPriority() { return priority; }
+        public LocalDateTime getScheduledTime() { return scheduledTime; }
+    }
     private StudentManager studentManager;
     private GradeManager gradeManager;
     private FileIOService fileIOService;
@@ -18,6 +50,9 @@ public class ConcurrentTaskService {
     private ExecutorService reportThreadPool;
     private ExecutorService statsThreadPool;
     private ScheduledExecutorService scheduledThreadPool;
+
+    // Priority queue for task scheduling (from PDF requirements)
+    private PriorityQueue<ScheduledTask> taskQueue;
 
     // Performance tracking
     private AtomicInteger completedTasks = new AtomicInteger(0);
@@ -35,6 +70,9 @@ public class ConcurrentTaskService {
         reportThreadPool = Executors.newFixedThreadPool(Math.max(2, processors - 2));
         statsThreadPool = Executors.newCachedThreadPool();
         scheduledThreadPool = Executors.newScheduledThreadPool(3);
+
+        // Initialize priority queue for task scheduling
+        taskQueue = new PriorityQueue<>();
     }
 
     public void generateBatchReports(int threadCount, String reportType) {
@@ -213,5 +251,79 @@ public class ConcurrentTaskService {
         }
 
         System.out.println("Thread pools shutdown complete.");
+    }
+
+    // Priority-based task scheduling methods (using PriorityQueue from PDF requirements)
+
+    /**
+     * Schedules a task with priority using PriorityQueue
+     * Time Complexity: O(log n) for insertion
+     */
+    public void schedulePriorityTask(String taskId, String description, Runnable task, int priority, LocalDateTime scheduledTime) {
+        ScheduledTask scheduledTask = new ScheduledTask(taskId, description, task, priority, scheduledTime);
+        taskQueue.offer(scheduledTask); // O(log n) insertion
+        System.out.println("✓ Task '" + description + "' scheduled with priority " + priority);
+    }
+
+    /**
+     * Executes the highest priority task from the queue
+     * Time Complexity: O(log n) for removal
+     */
+    public void executeNextPriorityTask() {
+        ScheduledTask task = taskQueue.poll(); // O(log n) removal
+        if (task != null) {
+            System.out.println("Executing priority task: " + task.getDescription());
+            long startTime = System.nanoTime();
+            try {
+                task.getTask().run();
+                long executionTime = System.nanoTime() - startTime;
+                taskExecutionTimes.put(task.getTaskId(), executionTime);
+                completedTasks.incrementAndGet();
+                System.out.println("✓ Task completed in " + (executionTime / 1_000_000) + "ms");
+            } catch (Exception e) {
+                failedTasks.incrementAndGet();
+                System.err.println("✗ Task failed: " + e.getMessage());
+            }
+        } else {
+            System.out.println("No tasks in priority queue");
+        }
+    }
+
+    /**
+     * Returns the next task without removing it
+     * Time Complexity: O(1)
+     */
+    public ScheduledTask peekNextTask() {
+        return taskQueue.peek(); // O(1) peek
+    }
+
+    /**
+     * Gets all pending tasks sorted by priority
+     * Time Complexity: O(n log n) due to sorting
+     */
+    public List<ScheduledTask> getPendingTasks() {
+        return new ArrayList<>(taskQueue); // Creates a copy
+    }
+
+    /**
+     * Cancels a specific task by ID
+     * Time Complexity: O(n) in worst case
+     */
+    public boolean cancelTask(String taskId) {
+        return taskQueue.removeIf(task -> task.getTaskId().equals(taskId));
+    }
+
+    /**
+     * Gets priority queue statistics
+     */
+    public Map<String, Object> getPriorityQueueStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("queueSize", taskQueue.size());
+        stats.put("isEmpty", taskQueue.isEmpty());
+        if (!taskQueue.isEmpty()) {
+            stats.put("nextTask", taskQueue.peek().getDescription());
+            stats.put("nextPriority", taskQueue.peek().getPriority());
+        }
+        return stats;
     }
 }

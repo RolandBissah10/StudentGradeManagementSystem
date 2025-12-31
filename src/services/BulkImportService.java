@@ -1,10 +1,6 @@
 package services;
 
-import exceptions.InvalidFileFormatException;
-import exceptions.StudentNotFoundException;
-import exceptions.InvalidGradeException;
 import models.*;
-import utils.ValidationUtils;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -146,18 +142,25 @@ public class BulkImportService {
         // Handle quoted CSV fields
         List<String> parts = parseCSVLine(line);
 
-        if (parts.size() != 4) {
-            logWriter.println("Row " + rowNumber + ": FAILED - Expected 4 columns, found " + parts.size());
+        if (parts.size() != 5) {
+            logWriter.println("Row " + rowNumber + ": FAILED - Expected 5 columns, found " + parts.size());
             logWriter.println("  Line: " + line);
             return false;
         }
 
-        String studentId = parts.get(0).trim();
-        String subjectName = parts.get(1).trim();
-        String subjectType = parts.get(2).trim();
-        String gradeStr = parts.get(3).trim();
+        String gradeId = parts.get(0).trim();
+        String studentId = parts.get(1).trim();
+        String subjectName = parts.get(2).trim();
+        String subjectType = parts.get(3).trim();
+        String gradeStr = parts.get(4).trim();
 
         try {
+            // Validate grade ID
+            if (gradeId == null || gradeId.isEmpty()) {
+                logWriter.println("Row " + rowNumber + ": FAILED - Grade ID is empty");
+                return false;
+            }
+
             // Validate student ID
             if (studentId == null || studentId.isEmpty()) {
                 logWriter.println("Row " + rowNumber + ": FAILED - Student ID is empty");
@@ -202,11 +205,11 @@ public class BulkImportService {
             }
 
             // Create and add grade
-            Grade newGrade = new Grade(studentId, subject, grade);
+            Grade newGrade = new Grade(gradeId, studentId, subject, grade);
             gradeManager.addGrade(newGrade);
 
             logWriter.println("Row " + rowNumber + ": SUCCESS - " +
-                    studentId + ", " + subjectName + " (" + subjectType + "), " + grade + "%");
+                    gradeId + ", " + studentId + ", " + subjectName + " (" + subjectType + "), " + grade + "%");
             return true;
 
         } catch (Exception e) {

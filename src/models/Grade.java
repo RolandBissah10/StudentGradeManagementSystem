@@ -25,7 +25,11 @@ public class Grade implements Gradable, Serializable {
             new SimpleDateFormat("dd-MM-yyyy");
 
     public Grade(String studentId, Subject subject, double grade) {
-        this.gradeId = generateGradeId();
+        this(generateGradeId(), studentId, subject, grade);
+    }
+
+    public Grade(String gradeId, String studentId, Subject subject, double grade) {
+        this.gradeId = gradeId;
         this.studentId = studentId;
         this.subject = subject;
         this.grade = grade;
@@ -33,7 +37,7 @@ public class Grade implements Gradable, Serializable {
         this.timestamp = LocalDateTime.now();
     }
 
-    private String generateGradeId() {
+    private static String generateGradeId() {
         gradeCounter++;
         return String.format("GRD%03d", gradeCounter);
     }

@@ -2,8 +2,7 @@ package services;
 
 import models.*;
 import exceptions.ExportException;
-import org.apache.pdfbox.pdmodel.PDDocument;
-
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,17 +15,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class BatchReportService {
-    private StudentManager studentManager;
-    private GradeManager gradeManager;
     private ReportGenerator reportGenerator;
 
     private static final DateTimeFormatter TIMESTAMP_FORMATTER =
             DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
-    public BatchReportService(StudentManager studentManager, GradeManager gradeManager,
-                              ReportGenerator reportGenerator) {
-        this.studentManager = studentManager;
-        this.gradeManager = gradeManager;
+    public BatchReportService(ReportGenerator reportGenerator) {
         this.reportGenerator = reportGenerator;
     }
 
@@ -46,13 +40,9 @@ public class BatchReportService {
         System.out.println("Total Tasks: " + (students.size() * reportTypes.size()));
         System.out.println("─".repeat(60));
 
-        // Create a summary list to track what's happening
-        List<String> reportLog = new ArrayList<>();
-
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
         AtomicInteger completedTasks = new AtomicInteger(0);
         AtomicInteger failedTasks = new AtomicInteger(0);
-        AtomicInteger currentStudent = new AtomicInteger(0);
 
         int totalTasks = students.size() * reportTypes.size();
 
@@ -310,28 +300,11 @@ public class BatchReportService {
                 if (filePath != null && Files.exists(filePath)) {
                     try {
                         long fileSize = Files.size(filePath);
-                        // Check if PDF is valid
-                        if (reportType.equalsIgnoreCase("pdf") && fileSize > 0) {
-                            try (PDDocument doc = PDDocument.load(filePath.toFile())) {
-                                System.out.printf("  ✓ %-8s %-10s: %s (%.1f KB) ✓ Valid PDF%n",
-                                        studentId,
-                                        reportType.toUpperCase(),
-                                        filePath.getFileName(),
-                                        fileSize / 1024.0);
-                            } catch (Exception e) {
-                                System.out.printf("  ✗ %-8s %-10s: %s (%.1f KB) ✗ Corrupt PDF%n",
-                                        studentId,
-                                        reportType.toUpperCase(),
-                                        filePath.getFileName(),
-                                        fileSize / 1024.0);
-                            }
-                        } else {
-                            System.out.printf("  ✓ %-8s %-10s: %s (%.1f KB)%n",
-                                    studentId,
-                                    reportType.toUpperCase(),
-                                    filePath.getFileName(),
-                                    fileSize / 1024.0);
-                        }
+                        System.out.printf("  ✓ %-8s %-10s: %s (%.1f KB)%n",
+                                studentId,
+                                reportType.toUpperCase(),
+                                filePath.getFileName(),
+                                fileSize / 1024.0);
                         foundFiles++;
                     } catch (IOException e) {
                         System.out.printf("  ✗ %-8s %-10s: Error checking file%n",
@@ -374,7 +347,6 @@ public class BatchReportService {
             System.out.print("\nProcessing " + studentId + " - " +
                     truncate(student.getName(), 20) + " ");
 
-            int studentSuccess = 0;
             int studentFail = 0;
 
             for (String reportType : reportTypes) {
@@ -397,7 +369,6 @@ public class BatchReportService {
                             break;
                     }
                     successCount++;
-                    studentSuccess++;
 
                 } catch (ExportException e) {
                     System.out.print("✗" + reportType.charAt(0) + " ");
@@ -442,7 +413,6 @@ public class BatchReportService {
     private static class ReportResult {
         private String studentId;
         private String reportType;
-        private String filename;
         private boolean success;
         private String errorMessage;
         private String filePath;
@@ -450,14 +420,12 @@ public class BatchReportService {
         public ReportResult(String studentId, String reportType, String filename) {
             this.studentId = studentId;
             this.reportType = reportType;
-            this.filename = filename;
             this.success = false;
         }
 
         // Getters and setters
         public String getStudentId() { return studentId; }
         public String getReportType() { return reportType; }
-        public String getFilename() { return filename; }
         public boolean isSuccess() { return success; }
         public void setSuccess(boolean success) { this.success = success; }
         public String getErrorMessage() { return errorMessage; }

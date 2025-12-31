@@ -8,6 +8,7 @@ import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 
 import java.io.*;
 import java.nio.file.*;
@@ -208,8 +209,7 @@ public class ReportGenerator implements Exportable {
     // NEW METHODS FOR BATCH REPORTS
     // ============================
 
-    // 1. PDF Summary Report (text-based simulation)
-    // Cleaner version with helper method
+    // 1. PDF Summary Report
     public void exportPdfSummary(String studentId, String filename) throws ExportException {
         ensureReportsDirectory("pdf");
         Path filePath = Paths.get("reports/pdf", filename + "_summary.pdf");
@@ -231,7 +231,7 @@ public class ReportGenerator implements Exportable {
                 BiConsumer<String, Float> addText = (text, fontSize) -> {
                     try {
                         cs.beginText();
-                        cs.setFont(PDType1Font.HELVETICA, fontSize);
+                        cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), fontSize);
                         cs.newLineAtOffset(margin, y[0]);
                         cs.showText(text);
                         cs.endText();
@@ -243,7 +243,7 @@ public class ReportGenerator implements Exportable {
 
                 // Title
                 cs.beginText();
-                cs.setFont(PDType1Font.HELVETICA_BOLD, 20);
+                cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 20);
                 cs.newLineAtOffset(margin, y[0]);
                 cs.showText("STUDENT GRADE REPORT");
                 cs.endText();
@@ -259,7 +259,7 @@ public class ReportGenerator implements Exportable {
                 // Performance
                 double overallAvg = gradeManager.calculateOverallAverage(studentId);
                 cs.beginText();
-                cs.setFont(PDType1Font.HELVETICA_BOLD, 14);
+                cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 14);
                 cs.newLineAtOffset(margin, y[0]);
                 cs.showText("PERFORMANCE");
                 cs.endText();
@@ -271,7 +271,7 @@ public class ReportGenerator implements Exportable {
 
                 // Footer
                 cs.beginText();
-                cs.setFont(PDType1Font.HELVETICA_OBLIQUE, 10);
+                cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_OBLIQUE), 10);
                 cs.newLineAtOffset(margin, 40);
                 cs.showText("Generated: " + LocalDateTime.now().format(TIMESTAMP_FORMATTER));
                 cs.endText();
@@ -282,17 +282,6 @@ public class ReportGenerator implements Exportable {
 
         } catch (IOException | RuntimeException e) {
             throw new ExportException("PDF export failed: " + e.getMessage());
-        }
-    }
-
-    // Helper method for file size formatting
-    private String formatFileSize(long bytes) {
-        if (bytes < 1024) {
-            return bytes + " B";
-        } else if (bytes < 1024 * 1024) {
-            return String.format("%.1f KB", bytes / 1024.0);
-        } else {
-            return String.format("%.1f MB", bytes / (1024.0 * 1024.0));
         }
     }
 

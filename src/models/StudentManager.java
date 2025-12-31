@@ -1,7 +1,6 @@
 package models;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class StudentManager {
     // Optimized collections from PDF requirements
@@ -25,6 +24,11 @@ public class StudentManager {
         studentsByType.put("Honors", new ArrayList<>());
     }
 
+    /**
+     * Adds a student to all collections
+     * Time Complexity: O(1) for HashMap, HashSet; O(1) amortized for ArrayList
+     * Overall: O(1)
+     */
     public void addStudent(Student student) {
 
         // Add to all collections
@@ -38,6 +42,10 @@ public class StudentManager {
         System.out.println("  Memory usage: " + calculateMemoryUsage() + " KB");
     }
 
+    /**
+     * Finds student by ID using HashMap
+     * Time Complexity: O(1) average case
+     */
     public Student findStudent(String studentId) {
         totalLookups++;
         Student student = studentMap.get(studentId);
@@ -45,6 +53,10 @@ public class StudentManager {
         return student;
     }
 
+    /**
+     * Finds student by email - linear search through ArrayList
+     * Time Complexity: O(n) where n is number of students
+     */
     public Student findStudentByEmail(String email) {
         for (Student student : studentList) {
             if (student.getEmail().equals(email)) {

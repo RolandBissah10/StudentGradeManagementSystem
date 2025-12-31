@@ -12,15 +12,12 @@ import java.util.stream.Collectors;
 public class StatisticsDashboard {
     private final StudentManager studentManager;
     private final GradeManager gradeManager;
-    private final CacheManager cacheManager;
 
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
     private final AtomicReference<DashboardData> currentData = new AtomicReference<>(new DashboardData());
     private ScheduledExecutorService dashboardScheduler;
     private ScheduledFuture<?> updateTask;
 
-    private static final DateTimeFormatter TIME_FORMATTER =
-            DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final DateTimeFormatter FULL_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -33,7 +30,6 @@ public class StatisticsDashboard {
         double stdDeviation;
         Map<String, Long> gradeDistribution;
         List<StudentPerformance> topPerformers;
-        Map<String, Long> studentTypeDistribution;
         Map<String, Double> subjectAverages;
         SystemMetrics systemMetrics;
         int activeThreads;
@@ -44,7 +40,6 @@ public class StatisticsDashboard {
             this.timestamp = LocalDateTime.now();
             this.gradeDistribution = new LinkedHashMap<>();
             this.topPerformers = new ArrayList<>();
-            this.studentTypeDistribution = new HashMap<>();
             this.subjectAverages = new HashMap<>();
             this.systemMetrics = new SystemMetrics();
             this.activeTasks = new ArrayList<>();
@@ -69,16 +64,12 @@ public class StatisticsDashboard {
         long usedMemory;
         long maxMemory;
         int availableProcessors;
-        int threadCount;
-        long gcCount;
 
         SystemMetrics() {
             Runtime runtime = Runtime.getRuntime();
             this.usedMemory = runtime.totalMemory() - runtime.freeMemory();
             this.maxMemory = runtime.maxMemory();
             this.availableProcessors = runtime.availableProcessors();
-            this.threadCount = Thread.activeCount();
-            this.gcCount = 0; // Would need GC monitoring to update this
         }
     }
 
@@ -96,11 +87,9 @@ public class StatisticsDashboard {
         }
     }
 
-    public StatisticsDashboard(StudentManager studentManager, GradeManager gradeManager,
-                               CacheManager cacheManager) {
+    public StatisticsDashboard(StudentManager studentManager, GradeManager gradeManager) {
         this.studentManager = studentManager;
         this.gradeManager = gradeManager;
-        this.cacheManager = cacheManager;
     }
 
     public void startDashboard(int refreshIntervalSeconds) {
@@ -184,13 +173,6 @@ public class StatisticsDashboard {
                 .sorted((a, b) -> Double.compare(b.averageGrade, a.averageGrade))
                 .limit(5)
                 .collect(Collectors.toList());
-
-        // Student type distribution
-        data.studentTypeDistribution = students.stream()
-                .collect(Collectors.groupingBy(
-                        Student::getStudentType,
-                        Collectors.counting()
-                ));
 
         // Subject averages
         data.subjectAverages = calculateSubjectAverages(allGrades);
