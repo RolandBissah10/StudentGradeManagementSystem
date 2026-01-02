@@ -8,15 +8,20 @@ import java.time.format.DateTimeFormatter;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 
 public class StatisticsDashboard {
     private final StudentManager studentManager;
     private final GradeManager gradeManager;
 
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
+    private final AtomicBoolean isPaused = new AtomicBoolean(false);
     private final AtomicReference<DashboardData> currentData = new AtomicReference<>(new DashboardData());
     private ScheduledExecutorService dashboardScheduler;
     private ScheduledFuture<?> updateTask;
+    private ExecutorService commandExecutor;
+    private volatile boolean shouldStop = false;
 
     private static final DateTimeFormatter FULL_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -90,6 +95,7 @@ public class StatisticsDashboard {
     public StatisticsDashboard(StudentManager studentManager, GradeManager gradeManager) {
         this.studentManager = studentManager;
         this.gradeManager = gradeManager;
+        this.commandExecutor = Executors.newSingleThreadExecutor();
     }
 
     public void startDashboard(int refreshIntervalSeconds) {
@@ -98,14 +104,17 @@ public class StatisticsDashboard {
             return;
         }
 
+        shouldStop = false;
         isRunning.set(true);
+        isPaused.set(false);
+
         dashboardScheduler = Executors.newScheduledThreadPool(1);
 
         System.out.println("\n" + "=".repeat(100));
         System.out.println("              REAL-TIME STATISTICS DASHBOARD v3.0");
         System.out.println("=".repeat(100));
         System.out.printf("Auto-refresh: Enabled (%d seconds) | Thread: RUNNING%n", refreshIntervalSeconds);
-        System.out.println("Commands: [Q]uit [R]efresh [P]ause [S]tats [C]hart [M]etrics");
+        System.out.println("Commands: [Q]uit [R]efresh [P]ause [S]tats [C]hart [M]etrics [H]elp");
         System.out.println();
 
         // Initial update
@@ -114,11 +123,142 @@ public class StatisticsDashboard {
 
         // Schedule periodic updates
         updateTask = dashboardScheduler.scheduleAtFixedRate(() -> {
-            if (isRunning.get()) {
+            if (isRunning.get() && !isPaused.get()) {
                 updateStatistics();
-                displayDashboard();
+                clearAndDisplayDashboard();
             }
         }, refreshIntervalSeconds, refreshIntervalSeconds, TimeUnit.SECONDS);
+
+        // Start command handler in separate thread
+        commandExecutor.submit(this::handleCommands);
+    }
+
+    private void handleCommands() {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+
+        while (isRunning.get() && !shouldStop) {
+            try {
+                if (reader.ready()) {
+                    String command = reader.readLine().trim().toUpperCase();
+                    processCommand(command);
+                } else {
+                    Thread.sleep(100); // Small delay to prevent CPU spinning
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            } catch (Exception e) {
+                // Ignore other exceptions during command reading
+                if (isRunning.get()) {
+                    System.err.println("Command error: " + e.getMessage());
+                }
+            }
+        }
+    }
+
+    private void processCommand(String command) {
+        if (command.isEmpty()) {
+            return;
+        }
+
+        switch (command.charAt(0)) {
+            case 'Q':
+                System.out.println("\nStopping dashboard...");
+                stop();
+                break;
+
+            case 'R':
+                if (isRunning.get()) {
+                    System.out.println("\nManual refresh triggered...");
+                    updateStatistics();
+                    clearAndDisplayDashboard();
+                }
+                break;
+
+            case 'P':
+                if (isPaused.get()) {
+                    resumeDashboard();
+                } else {
+                    pauseDashboard();
+                }
+                break;
+
+            case 'S':
+                displayPerformanceMetrics();
+                waitForEnter();
+                clearAndDisplayDashboard();
+                break;
+
+            case 'C':
+                // Show charts - you can implement specific chart display
+                System.out.println("\nShowing performance charts...");
+                displayGradeDistributionChart(currentData.get());
+                waitForEnter();
+                clearAndDisplayDashboard();
+                break;
+
+            case 'M':
+                displayMemoryChart();
+                waitForEnter();
+                clearAndDisplayDashboard();
+                break;
+
+            case 'H':
+                displayHelp();
+                waitForEnter();
+                clearAndDisplayDashboard();
+                break;
+
+            default:
+                System.out.println("\nUnknown command '" + command + "'. Type 'H' for help.");
+                System.out.print("Command: ");
+                break;
+        }
+    }
+
+    private void pauseDashboard() {
+        isPaused.set(true);
+        if (updateTask != null) {
+            updateTask.cancel(false);
+        }
+        System.out.println("\nDashboard PAUSED. Press 'P' to resume.");
+        System.out.print("Command: ");
+    }
+
+    private void resumeDashboard() {
+        isPaused.set(false);
+        System.out.println("\nDashboard RESUMED. Auto-refresh enabled.");
+
+        // Restart the scheduled task
+        if (dashboardScheduler != null && !dashboardScheduler.isShutdown()) {
+            updateTask = dashboardScheduler.scheduleAtFixedRate(() -> {
+                if (isRunning.get() && !isPaused.get()) {
+                    updateStatistics();
+                    clearAndDisplayDashboard();
+                }
+            }, 5, 5, TimeUnit.SECONDS);
+        }
+    }
+
+    private void clearAndDisplayDashboard() {
+        clearScreen();
+        displayDashboard();
+    }
+
+    private void clearScreen() {
+        try {
+            if (System.getProperty("os.name").contains("Windows")) {
+                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
+            } else {
+                System.out.print("\033[H\033[2J");
+                System.out.flush();
+            }
+        } catch (Exception e) {
+            // Fallback: print some newlines
+            for (int i = 0; i < 50; i++) {
+                System.out.println();
+            }
+        }
     }
 
     private void updateStatistics() {
@@ -255,16 +395,13 @@ public class StatisticsDashboard {
     public void displayDashboard() {
         DashboardData data = currentData.get();
 
-        // Clear screen (simulated)
-        System.out.print("\033[H\033[2J");
-        System.out.flush();
-
         System.out.println("\n" + "=".repeat(100));
         System.out.println("              REAL-TIME STATISTICS DASHBOARD");
         System.out.println("=".repeat(100));
-        System.out.printf("Last Updated: %s | Status: %s%n",
+        System.out.printf("Last Updated: %s | Status: %s | Auto-refresh: %s%n",
                 data.timestamp.format(FULL_FORMATTER),
-                isRunning.get() ? "RUNNING" : "PAUSED");
+                isRunning.get() ? "RUNNING" : "STOPPED",
+                isPaused.get() ? "PAUSED" : "ENABLED");
         System.out.println();
 
         // SYSTEM STATUS with bar charts
@@ -607,46 +744,6 @@ public class StatisticsDashboard {
         }
     }
 
-    public void pause() {
-        isRunning.set(false);
-        if (updateTask != null) {
-            updateTask.cancel(false);
-        }
-        System.out.println("\nDashboard paused. Press 'R' to resume.");
-    }
-
-    public void resume() {
-        if (!isRunning.get()) {
-            isRunning.set(true);
-            System.out.println("Dashboard resumed.");
-            updateStatistics();
-            displayDashboard();
-        }
-    }
-
-    public void stop() {
-        isRunning.set(false);
-        if (updateTask != null) {
-            updateTask.cancel(false);
-        }
-        if (dashboardScheduler != null) {
-            dashboardScheduler.shutdown();
-            try {
-                if (!dashboardScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                    dashboardScheduler.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                dashboardScheduler.shutdownNow();
-                Thread.currentThread().interrupt();
-            }
-        }
-        System.out.println("Dashboard stopped.");
-    }
-
-    public boolean isRunning() {
-        return isRunning.get();
-    }
-
     public void displayHelp() {
         System.out.println("\n" + "=".repeat(80));
         System.out.println("               DASHBOARD COMMANDS HELP");
@@ -688,7 +785,58 @@ public class StatisticsDashboard {
         System.out.println("  Δ - Average/Needs monitoring");
         System.out.println("  ✗ - Poor/Needs improvement");
         System.out.println("  ⚠️  - Warning/Attention needed");
+    }
 
-        System.out.println("\nPress Enter to return to dashboard...");
+    private void waitForEnter() {
+        System.out.println("\nPress Enter to continue...");
+        try {
+            System.in.read();
+            // Clear the input buffer
+            while (System.in.available() > 0) {
+                System.in.read();
+            }
+        } catch (Exception e) {
+            // Ignore
+        }
+    }
+
+    public void stop() {
+        shouldStop = true;
+        isRunning.set(false);
+        isPaused.set(false);
+
+        // Cancel scheduled task
+        if (updateTask != null) {
+            updateTask.cancel(false);
+        }
+
+        // Shutdown schedulers
+        if (dashboardScheduler != null) {
+            dashboardScheduler.shutdown();
+            try {
+                if (!dashboardScheduler.awaitTermination(3, TimeUnit.SECONDS)) {
+                    dashboardScheduler.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                dashboardScheduler.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        // Shutdown command executor
+        if (commandExecutor != null) {
+            commandExecutor.shutdownNow();
+        }
+
+        clearScreen();
+        System.out.println("\nDashboard stopped. Press Enter to return to main menu...");
+    }
+
+    public boolean isRunning() {
+        return isRunning.get() && !shouldStop;
+    }
+
+    public boolean isPaused() {
+        return isPaused.get();
     }
 }

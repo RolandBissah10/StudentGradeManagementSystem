@@ -988,8 +988,24 @@ public class Main {
 
         try {
             statisticsDashboard.startDashboard(5); // Refresh every 5 seconds
-            System.out.println("✓ Real-time dashboard started");
-            auditLogger.logSimple("DASHBOARD", "Started real-time dashboard", null);
+
+            // Wait for dashboard to stop before returning to main menu
+            while (statisticsDashboard.isRunning()) {
+                Thread.sleep(100);
+            }
+
+            System.out.println("✓ Returning to main menu...");
+            auditLogger.logSimple("DASHBOARD", "Stopped real-time dashboard", null);
+
+            // Clear any remaining input
+            try {
+                while (System.in.available() > 0) {
+                    System.in.read();
+                }
+            } catch (Exception e) {
+                // Ignore
+            }
+
         } catch (Exception e) {
             System.err.println("Dashboard error: " + e.getMessage());
             auditLogger.logError("DASHBOARD", "Failed to start dashboard", e.getMessage(), null);
@@ -1157,15 +1173,16 @@ public class Main {
         System.out.println("=".repeat(80));
 
         try {
-            System.out.println("\nReport Scope:");
+            System.out.println("\n===== REPORT SCOPE: =====");
             System.out.println("1. All Students (" + studentManager.getStudentCount() + " students)");
             System.out.println("2. Regular Students Only");
             System.out.println("3. Honors Students Only");
-            System.out.print("Select scope (1-3): ");
+            System.out.println("4. By Grade Range");
+            System.out.print("Select scope (1-4): ");
 
             String scopeChoice = scanner.nextLine();
 
-            System.out.println("\nReport Format:");
+            System.out.println("\n===== REPORT FORMAT: =====");
             System.out.println("1. PDF Summary Report");
             System.out.println("2. Detailed Text Report");
             System.out.println("3. Excel Spreadsheet");
@@ -1181,24 +1198,43 @@ public class Main {
             switch (scopeChoice) {
                 case "1": // All students
                     studentsToProcess = new ArrayList<>(allStudents);
+                    System.out.println("✓ Selected: All Students (" + studentsToProcess.size() + ")");
                     break;
                 case "2": // Regular students only
                     studentsToProcess = allStudents.stream()
                             .filter(s -> s instanceof RegularStudent)
                             .collect(Collectors.toList());
+                    System.out.println("✓ Selected: Regular Students Only (" + studentsToProcess.size() + ")");
                     break;
                 case "3": // Honors students only
                     studentsToProcess = allStudents.stream()
                             .filter(s -> s instanceof HonorsStudent)
                             .collect(Collectors.toList());
+                    System.out.println("✓ Selected: Honors Students Only (" + studentsToProcess.size() + ")");
+                    break;
+                case "4": // By grade range
+                    System.out.print("Enter minimum grade (0-100): ");
+                    int minGrade = Integer.parseInt(scanner.nextLine());
+                    System.out.print("Enter maximum grade (0-100): ");
+                    int maxGrade = Integer.parseInt(scanner.nextLine());
+
+                    studentsToProcess = allStudents.stream()
+                            .filter(s -> {
+                                // Use the GradeManager to get average grade
+                                double avgGrade = gradeManager.calculateOverallAverage(s.getStudentId());
+                                return avgGrade >= minGrade && avgGrade <= maxGrade;
+                            })
+                            .collect(Collectors.toList());
+                    System.out.println("✓ Selected: Grade Range " + minGrade + "-" + maxGrade +
+                            " (" + studentsToProcess.size() + " students)");
                     break;
                 default:
-                    System.out.println("Invalid choice! Using all students.");
+                    System.out.println("⚠️  Invalid choice! Using all students.");
                     studentsToProcess = new ArrayList<>(allStudents);
             }
 
             if (studentsToProcess.isEmpty()) {
-                System.out.println("No students found for the selected scope!");
+                System.out.println("❌ No students found for the selected scope!");
                 return;
             }
 
@@ -1207,86 +1243,117 @@ public class Main {
             switch (formatChoice) {
                 case "1": // PDF only
                     reportTypes.add("pdf");
+                    System.out.println("✓ Format: PDF Summary");
                     break;
                 case "2": // Text only
                     reportTypes.add("text");
+                    System.out.println("✓ Format: Detailed Text");
                     break;
                 case "3": // Excel only
                     reportTypes.add("excel");
+                    System.out.println("✓ Format: Excel Spreadsheet");
                     break;
                 case "4": // All formats
                     reportTypes.add("pdf");
                     reportTypes.add("text");
                     reportTypes.add("excel");
+                    System.out.println("✓ Format: All Formats (PDF, Text, Excel)");
                     break;
                 default:
-                    System.out.println("Invalid choice! Using all formats.");
+                    System.out.println("⚠️  Invalid choice! Using all formats.");
                     reportTypes.add("pdf");
                     reportTypes.add("text");
                     reportTypes.add("excel");
             }
 
+            // Get system information
             int availableProcessors = Runtime.getRuntime().availableProcessors();
-            System.out.printf("\nAvailable Processors: %d%n", availableProcessors);
-            System.out.printf("Students to Process: %d%n", studentsToProcess.size());
-            System.out.printf("Report Formats: %s%n", String.join(", ", reportTypes));
-            System.out.printf("Recommended Threads: %d-%d%n",
-                    Math.max(2, availableProcessors / 2), availableProcessors);
+            int recommendedMin = Math.max(2, availableProcessors / 2);
+            int recommendedMax = Math.min(availableProcessors, 8);
 
-            System.out.print("Enter number of threads: ");
+            System.out.println("\n⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡ SYSTEM INFORMATION: ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡");
+            System.out.printf("  Available Processors: %d%n", availableProcessors);
+            System.out.printf("  Recommended Threads: %d-%d%n", recommendedMin, recommendedMax);
+
+            System.out.print("\n Enter number of threads (" + recommendedMin + "-" + recommendedMax + "): ");
             int threadCount;
             try {
                 threadCount = Integer.parseInt(scanner.nextLine());
-                threadCount = Math.max(1, Math.min(threadCount, availableProcessors * 2));
+                threadCount = Math.max(recommendedMin, Math.min(threadCount, recommendedMax));
+                System.out.println("✓ Using " + threadCount + " threads");
             } catch (NumberFormatException e) {
-                System.out.println("Invalid number! Using default of 4 threads.");
-                threadCount = 4;
+                threadCount = recommendedMin;
+                System.out.println("⚠️  Invalid number! Using " + recommendedMin + " threads.");
             }
 
+            // Calculate total tasks
+            int totalTasks = studentsToProcess.size() * reportTypes.size();
+
             System.out.println("\n" + "=".repeat(80));
-            System.out.println("BATCH REPORT CONFIGURATION");
+            System.out.println("⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡ BATCH REPORT CONFIGURATION ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡");
             System.out.println("=".repeat(80));
-            System.out.printf("Scope: %s (%d students)%n",
+            System.out.printf("Scope:           %s%n",
                     scopeChoice.equals("1") ? "All Students" :
-                            scopeChoice.equals("2") ? "Regular Only" : "Honors Only",
-                    studentsToProcess.size());
-            System.out.printf("Formats: %s%n", String.join(", ", reportTypes));
-            System.out.printf("Threads: %d%n", threadCount);
-            System.out.printf("Total Reports: %d%n", studentsToProcess.size() * reportTypes.size());
+                            scopeChoice.equals("2") ? "Regular Only" :
+                                    scopeChoice.equals("3") ? "Honors Only" : "By Grade Range");
+            System.out.printf("Student Count:   %d students%n", studentsToProcess.size());
+            System.out.printf("Report Formats:  %s%n", String.join(", ", reportTypes));
+            System.out.printf("Threads:         %d%n", threadCount);
+            System.out.printf("Total Reports:   %d%n", totalTasks);
+            System.out.printf("Estimated Sequential Time: %.1f seconds%n", totalTasks * 0.5);
             System.out.println("=".repeat(80));
 
-            System.out.print("\nProceed with report generation? (Y/N): ");
+            System.out.print("\n ✓ Proceed with concurrent report generation? (Y/N): ");
             String confirm = scanner.nextLine();
             if (!confirm.equalsIgnoreCase("Y")) {
-                System.out.println("Report generation cancelled.");
+                System.out.println("⚠️  Report generation cancelled.");
                 return;
             }
 
+            // Log the operation
             auditLogger.logSimple("BATCH_REPORTS",
                     String.format("Starting batch reports: %d students, %d threads, formats: %s",
                             studentsToProcess.size(), threadCount, String.join(",", reportTypes)), null);
 
-            System.out.println("\n" + "═".repeat(80));
-            System.out.println(" STARTING BATCH REPORT GENERATION");
-            System.out.println("═".repeat(80));
+            System.out.println("\n" + "⚡".repeat(40));
+            System.out.println("  STARTING CONCURRENT BATCH PROCESSING");
+            System.out.println("⚡".repeat(40));
+            System.out.println("Processing " + totalTasks + " reports with " + threadCount + " threads...");
+            System.out.println("Live status will update every 0.5 seconds");
+            System.out.println("Press Ctrl+C to cancel (not recommended)");
+
+            // Pause for user to see the message
+            Thread.sleep(2000);
 
             // Create and start batch report service
             BatchReportService batchService = new BatchReportService(reportGenerator);
 
-            // Choose between concurrent or simple generation
-            System.out.print("\nUse concurrent processing? (Y/N): ");
-            String useConcurrent = scanner.nextLine();
-
-            if (useConcurrent.equalsIgnoreCase("Y")) {
+            try {
                 batchService.generateConcurrentReports(studentsToProcess, reportTypes, threadCount);
-            } else {
-                batchService.generateSimpleBatchReports(studentsToProcess, reportTypes);
+
+                System.out.println("\n" + "=".repeat(40));
+                System.out.println(" 12" +
+                        "BATCH REPORTS COMPLETED SUCCESSFULLY");
+                System.out.println("=".repeat(40));
+
+                // Log success
+                auditLogger.logSimple("BATCH_REPORTS",
+                        "Batch reports completed successfully", null);
+
+            } catch (Exception e) {
+                System.err.println("\n❌ Error generating batch reports: " + e.getMessage());
+                auditLogger.logError("BATCH_REPORTS", "Failed to generate batch reports",
+                        e.getMessage(), null);
             }
 
+            System.out.println("\nPress Enter to return to main menu...");
+            scanner.nextLine();
+
         } catch (Exception e) {
-            System.err.println("Error generating batch reports: " + e.getMessage());
+            System.err.println("❌ Unexpected error: " + e.getMessage());
             e.printStackTrace();
-            auditLogger.logError("BATCH_REPORTS", "Failed to generate batch reports", e.getMessage(), null);
+            auditLogger.logError("BATCH_REPORTS", "Unexpected error in batch reports",
+                    e.getMessage(), null);
         }
     }
 
@@ -1489,7 +1556,7 @@ public class Main {
             } else {
                 // Sequential processing
                 System.out.println("\nProcessing sequentially...");
-                batchService.generateSimpleBatchReports(matchedStudents, reportTypes);
+                batchService.generateConcurrentReports(matchedStudents, reportTypes, 1); // FIXED HERE
             }
 
             System.out.println("\n All reports generated successfully!");
