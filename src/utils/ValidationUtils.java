@@ -48,6 +48,10 @@ public class ValidationUtils {
                         "john.smith@university.edu, jsmith@college.org");
     }
 
+    public static boolean isValidEmail(String email) {
+        return validateEmail(email).isValid();
+    }
+
     public static ValidationResult validatePhone(String phone) {
         if (phone == null || phone.trim().isEmpty()) {
             return ValidationResult.failure("Phone number cannot be empty");

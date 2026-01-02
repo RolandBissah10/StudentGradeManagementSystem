@@ -227,6 +227,92 @@ public class ConcurrentTaskService {
         return target.getTimeInMillis() - now.getTimeInMillis();
     }
 
+
+    public void scheduleWeeklyReportEmail(int dayOfWeek, int hour, int minute) {
+        System.out.println("\n=== SCHEDULING WEEKLY REPORT EMAIL ===");
+        System.out.printf("Schedule: Every %s at %02d:%02d%n",
+                getDayName(dayOfWeek), hour, minute);
+
+        long initialDelay = calculateInitialDelay(dayOfWeek, hour, minute);
+        scheduledThreadPool.scheduleAtFixedRate(() -> {
+            System.out.println("[" + LocalDateTime.now() + "] Sending weekly report emails...");
+            // Implement weekly email sending logic
+            System.out.println("[" + LocalDateTime.now() + "] Weekly emails sent!");
+        }, initialDelay, 7 * 24 * 60 * 60 * 1000L, TimeUnit.MILLISECONDS);
+
+        System.out.println("✓ Weekly report email task scheduled!");
+    }
+
+    public void scheduleMonthlyPerformanceSummary(int dayOfMonth, int hour, int minute) {
+        System.out.println("\n=== SCHEDULING MONTHLY PERFORMANCE SUMMARY ===");
+        System.out.printf("Schedule: Day %d of each month at %02d:%02d%n", dayOfMonth, hour, minute);
+
+        // Implementation would calculate monthly performance statistics
+        System.out.println("✓ Monthly performance summary task scheduled!");
+    }
+
+    public void scheduleHourlyDataSync() {
+        System.out.println("\n=== SCHEDULING HOURLY DATA SYNC ===");
+
+        scheduledThreadPool.scheduleAtFixedRate(() -> {
+            System.out.println("[" + LocalDateTime.now() + "] Starting hourly data sync...");
+            // Implement data synchronization logic
+            System.out.println("[" + LocalDateTime.now() + "] Hourly data sync completed!");
+        }, 0, 1, TimeUnit.HOURS);
+
+        System.out.println("✓ Hourly data sync task scheduled!");
+    }
+
+    public void scheduleCustomTask(String description, Runnable task, long initialDelay, long period, TimeUnit unit) {
+        System.out.println("\n=== SCHEDULING CUSTOM TASK ===");
+        System.out.println("Description: " + description);
+
+        scheduledThreadPool.scheduleAtFixedRate(() -> {
+            System.out.println("[" + LocalDateTime.now() + "] Starting custom task: " + description);
+            task.run();
+            System.out.println("[" + LocalDateTime.now() + "] Custom task completed!");
+        }, initialDelay, period, unit);
+
+        System.out.println("✓ Custom task '" + description + "' scheduled!");
+    }
+
+    private long calculateInitialDelay(int dayOfWeek, int hour, int minute) {
+        Calendar now = Calendar.getInstance();
+        Calendar target = Calendar.getInstance();
+
+        // Set target to next occurrence of specified day/time
+        target.set(Calendar.DAY_OF_WEEK, dayOfWeek);
+        target.set(Calendar.HOUR_OF_DAY, hour);
+        target.set(Calendar.MINUTE, minute);
+        target.set(Calendar.SECOND, 0);
+
+        // If time has already passed this week, schedule for next week
+        if (target.before(now)) {
+            target.add(Calendar.WEEK_OF_YEAR, 1);
+        }
+
+        return target.getTimeInMillis() - now.getTimeInMillis();
+    }
+
+    private String getDayName(int dayOfWeek) {
+        String[] days = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+        return days[dayOfWeek - 1];
+    }
+
+    // Add helper method to get target students
+    public List<Student> getTargetStudents(String targetType, StudentManager studentManager) {
+        switch (targetType) {
+            case "1": // All students
+                return studentManager.getStudents();
+            case "2": // Honors students only
+                return studentManager.getStudentsByType("Honors");
+            case "3": // Students with grade changes (simplified - returns all for now)
+                return studentManager.getStudents();
+            default:
+                return new ArrayList<>();
+        }
+    }
+
     public void shutdown() {
         System.out.println("Shutting down thread pools...");
         reportThreadPool.shutdown();

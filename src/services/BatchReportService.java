@@ -315,7 +315,7 @@ public class BatchReportService {
         long elapsed = System.currentTimeMillis() - startTime;
         double elapsedSec = elapsed / 1000.0;
 
-        System.out.println("\n⏱  TIME STATISTICS:");
+        System.out.println("\n⏱  ===== TIME STATISTICS: =====");
         System.out.printf("Elapsed: %.1fs%n", elapsedSec);
 
         if (progress > 0) {
