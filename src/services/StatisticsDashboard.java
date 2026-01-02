@@ -10,21 +10,28 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.IOException;
 
 public class StatisticsDashboard {
     private final StudentManager studentManager;
     private final GradeManager gradeManager;
+    private final CacheManager cacheManager;
 
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
     private final AtomicBoolean isPaused = new AtomicBoolean(false);
     private final AtomicReference<DashboardData> currentData = new AtomicReference<>(new DashboardData());
-    private ScheduledExecutorService dashboardScheduler;
+
+    private static ScheduledExecutorService dashboardScheduler;
+    private static ExecutorService commandExecutor;
+
     private ScheduledFuture<?> updateTask;
-    private ExecutorService commandExecutor;
     private volatile boolean shouldStop = false;
+    private BufferedReader commandReader;
 
     private static final DateTimeFormatter FULL_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    private static final int DEFAULT_REFRESH_INTERVAL = 5;
 
     private static class DashboardData {
         LocalDateTime timestamp;
@@ -92,10 +99,29 @@ public class StatisticsDashboard {
         }
     }
 
-    public StatisticsDashboard(StudentManager studentManager, GradeManager gradeManager) {
+    public StatisticsDashboard(StudentManager studentManager, GradeManager gradeManager, CacheManager cacheManager) {
         this.studentManager = studentManager;
         this.gradeManager = gradeManager;
-        this.commandExecutor = Executors.newSingleThreadExecutor();
+        this.cacheManager = cacheManager;
+        initializeExecutors();
+    }
+
+    private synchronized void initializeExecutors() {
+        if (dashboardScheduler == null || dashboardScheduler.isShutdown()) {
+            dashboardScheduler = Executors.newScheduledThreadPool(1, r -> {
+                Thread t = new Thread(r, "Dashboard-Scheduler");
+                t.setDaemon(true);
+                return t;
+            });
+        }
+
+        if (commandExecutor == null || commandExecutor.isShutdown()) {
+            commandExecutor = Executors.newSingleThreadExecutor(r -> {
+                Thread t = new Thread(r, "Dashboard-Command-Handler");
+                t.setDaemon(true);
+                return t;
+            });
+        }
     }
 
     public void startDashboard(int refreshIntervalSeconds) {
@@ -108,8 +134,6 @@ public class StatisticsDashboard {
         isRunning.set(true);
         isPaused.set(false);
 
-        dashboardScheduler = Executors.newScheduledThreadPool(1);
-
         System.out.println("\n" + "=".repeat(100));
         System.out.println("              REAL-TIME STATISTICS DASHBOARD v3.0");
         System.out.println("=".repeat(100));
@@ -117,38 +141,47 @@ public class StatisticsDashboard {
         System.out.println("Commands: [Q]uit [R]efresh [P]ause [S]tats [C]hart [M]etrics [H]elp");
         System.out.println();
 
-        // Initial update
         updateStatistics();
         displayDashboard();
 
-        // Schedule periodic updates
         updateTask = dashboardScheduler.scheduleAtFixedRate(() -> {
-            if (isRunning.get() && !isPaused.get()) {
-                updateStatistics();
-                clearAndDisplayDashboard();
+            if (isRunning.get() && !isPaused.get() && !shouldStop) {
+                try {
+                    updateStatistics();
+                    clearAndDisplayDashboard();
+                } catch (Exception e) {
+                    System.err.println("Dashboard update error: " + e.getMessage());
+                }
             }
         }, refreshIntervalSeconds, refreshIntervalSeconds, TimeUnit.SECONDS);
 
-        // Start command handler in separate thread
         commandExecutor.submit(this::handleCommands);
     }
 
     private void handleCommands() {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-
-        while (isRunning.get() && !shouldStop) {
+        while (isRunning.get() && !shouldStop && !Thread.currentThread().isInterrupted()) {
             try {
-                if (reader.ready()) {
-                    String command = reader.readLine().trim().toUpperCase();
-                    processCommand(command);
+                if (commandReader == null) {
+                    commandReader = new BufferedReader(new InputStreamReader(System.in));
+                }
+
+                if (System.in.available() > 0) {
+                    String command = commandReader.readLine();
+                    if (command != null) {
+                        processCommand(command.trim().toUpperCase());
+                    }
                 } else {
-                    Thread.sleep(100); // Small delay to prevent CPU spinning
+                    Thread.sleep(100);
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
+            } catch (IOException e) {
+                if (isRunning.get()) {
+                    System.err.println("Command I/O error: " + e.getMessage());
+                }
+                break;
             } catch (Exception e) {
-                // Ignore other exceptions during command reading
                 if (isRunning.get()) {
                     System.err.println("Command error: " + e.getMessage());
                 }
@@ -157,7 +190,7 @@ public class StatisticsDashboard {
     }
 
     private void processCommand(String command) {
-        if (command.isEmpty()) {
+        if (command == null || command.isEmpty()) {
             return;
         }
 
@@ -190,7 +223,6 @@ public class StatisticsDashboard {
                 break;
 
             case 'C':
-                // Show charts - you can implement specific chart display
                 System.out.println("\nShowing performance charts...");
                 displayGradeDistributionChart(currentData.get());
                 waitForEnter();
@@ -217,6 +249,8 @@ public class StatisticsDashboard {
     }
 
     private void pauseDashboard() {
+        if (!isRunning.get()) return;
+
         isPaused.set(true);
         if (updateTask != null) {
             updateTask.cancel(false);
@@ -226,17 +260,18 @@ public class StatisticsDashboard {
     }
 
     private void resumeDashboard() {
+        if (!isRunning.get()) return;
+
         isPaused.set(false);
         System.out.println("\nDashboard RESUMED. Auto-refresh enabled.");
 
-        // Restart the scheduled task
         if (dashboardScheduler != null && !dashboardScheduler.isShutdown()) {
             updateTask = dashboardScheduler.scheduleAtFixedRate(() -> {
-                if (isRunning.get() && !isPaused.get()) {
+                if (isRunning.get() && !isPaused.get() && !shouldStop) {
                     updateStatistics();
                     clearAndDisplayDashboard();
                 }
-            }, 5, 5, TimeUnit.SECONDS);
+            }, DEFAULT_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL, TimeUnit.SECONDS);
         }
     }
 
@@ -247,14 +282,14 @@ public class StatisticsDashboard {
 
     private void clearScreen() {
         try {
-            if (System.getProperty("os.name").contains("Windows")) {
+            final String os = System.getProperty("os.name");
+            if (os.contains("Windows")) {
                 new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
             } else {
                 System.out.print("\033[H\033[2J");
                 System.out.flush();
             }
         } catch (Exception e) {
-            // Fallback: print some newlines
             for (int i = 0; i < 50; i++) {
                 System.out.println();
             }
@@ -265,68 +300,60 @@ public class StatisticsDashboard {
         DashboardData data = new DashboardData();
         data.timestamp = LocalDateTime.now();
 
-        // Basic statistics
         List<Student> students = studentManager.getStudents();
         List<Grade> allGrades = getAllGrades();
 
         data.totalStudents = students.size();
         data.totalGrades = allGrades.size();
 
-        // Grade statistics
         if (!allGrades.isEmpty()) {
             List<Double> grades = allGrades.stream()
                     .map(Grade::getGrade)
                     .sorted()
                     .collect(Collectors.toList());
 
-            // Average
             data.averageGrade = grades.stream()
                     .mapToDouble(Double::doubleValue)
                     .average()
                     .orElse(0.0);
 
-            // Median
             if (grades.size() % 2 == 0) {
                 data.medianGrade = (grades.get(grades.size() / 2 - 1) + grades.get(grades.size() / 2)) / 2.0;
             } else {
                 data.medianGrade = grades.get(grades.size() / 2);
             }
 
-            // Standard deviation
             double variance = grades.stream()
                     .mapToDouble(g -> Math.pow(g - data.averageGrade, 2))
                     .average()
                     .orElse(0.0);
             data.stdDeviation = Math.sqrt(variance);
 
-            // Grade distribution with bar chart data
             data.gradeDistribution = calculateGradeDistribution(allGrades);
         }
 
-        // Top performers
         data.topPerformers = students.stream()
                 .map(s -> {
                     double avg = gradeManager.calculateOverallAverage(s.getStudentId());
                     double gpa = convertToGPA(avg);
                     return new StudentPerformance(s.getStudentId(), s.getName(), avg, gpa);
                 })
+                .filter(sp -> sp.averageGrade > 0)
                 .sorted((a, b) -> Double.compare(b.averageGrade, a.averageGrade))
                 .limit(5)
                 .collect(Collectors.toList());
 
-        // Subject averages
         data.subjectAverages = calculateSubjectAverages(allGrades);
-
-        // System metrics
         data.systemMetrics = new SystemMetrics();
         data.activeThreads = Thread.activeCount();
 
-        // Simulated cache hit rate (in real implementation, get from cache manager)
-        data.cacheHitRate = Math.random() * 30 + 70; // 70-100% for demo
+        if (cacheManager != null) {
+            data.cacheHitRate = cacheManager.getCacheHitRate();
+        } else {
+            data.cacheHitRate = Math.random() * 30 + 70;
+        }
 
-        // Simulated active tasks
         data.activeTasks = simulateActiveTasks();
-
         currentData.set(data);
     }
 
@@ -404,25 +431,13 @@ public class StatisticsDashboard {
                 isPaused.get() ? "PAUSED" : "ENABLED");
         System.out.println();
 
-        // SYSTEM STATUS with bar charts
         displaySystemStatus(data);
-
-        // LIVE STATISTICS with bar charts
         displayLiveStatistics(data);
-
-        // GRADE DISTRIBUTION with horizontal bar chart
         displayGradeDistributionChart(data);
-
-        // TOP PERFORMERS
         displayTopPerformers(data);
-
-        // SUBJECT PERFORMANCE with bar chart
         displaySubjectPerformanceChart(data);
-
-        // CONCURRENT OPERATIONS
         displayConcurrentOperations(data);
 
-        // Commands
         System.out.println("\n" + "=".repeat(100));
         System.out.println("Commands: [Q]uit [R]efresh [P]ause/Resume [S]tats [C]hart [M]etrics [H]elp");
         System.out.print("Command: ");
@@ -435,9 +450,8 @@ public class StatisticsDashboard {
         System.out.printf("Total Students: %-5d | Total Grades: %-6d%n",
                 data.totalStudents, data.totalGrades);
 
-        // Memory usage bar chart
         double memoryPercent = (data.systemMetrics.usedMemory * 100.0) / data.systemMetrics.maxMemory;
-        int memoryBarLength = (int) Math.round(memoryPercent / 2.5); // Scale to 40 chars
+        int memoryBarLength = (int) Math.round(memoryPercent / 2.5);
         String memoryBar = "█".repeat(Math.max(1, memoryBarLength)) +
                 "░".repeat(Math.max(0, 40 - memoryBarLength));
 
@@ -446,7 +460,6 @@ public class StatisticsDashboard {
                 data.systemMetrics.maxMemory / (1024.0 * 1024.0));
         System.out.printf("  [%s] %.1f%%%n", memoryBar, memoryPercent);
 
-        // Cache hit rate bar chart
         int cacheBarLength = (int) Math.round(data.cacheHitRate / 2.5);
         String cacheBar = "█".repeat(Math.max(1, cacheBarLength)) +
                 "░".repeat(Math.max(0, 40 - cacheBarLength));
@@ -466,7 +479,6 @@ public class StatisticsDashboard {
         System.out.printf("Average Grade: %6.1f%% | Median: %6.1f%% | Std Dev: %6.1f%%%n",
                 data.averageGrade, data.medianGrade, data.stdDeviation);
 
-        // Trend indicator
         String trend = data.averageGrade > 80 ? "↑" : data.averageGrade > 70 ? "→" : "↓";
         System.out.printf("Performance Trend: %s %s%n", trend,
                 data.averageGrade > 80 ? "Excellent" : data.averageGrade > 70 ? "Good" : "Needs Improvement");
@@ -482,31 +494,27 @@ public class StatisticsDashboard {
             return;
         }
 
-        // Find max count for scaling
         long maxCount = data.gradeDistribution.values().stream()
                 .max(Long::compare)
                 .orElse(1L);
 
-        // Display bar chart for each grade range
         for (Map.Entry<String, Long> entry : data.gradeDistribution.entrySet()) {
             String range = entry.getKey();
             long count = entry.getValue();
             double percentage = (count * 100.0) / data.totalGrades;
 
-            // Create bar with proper scaling
             int barLength = maxCount > 0 ? (int) Math.round((count * 50.0) / maxCount) : 0;
             String bar = "█".repeat(Math.max(1, barLength));
 
-            // Color coding
-            String colorCode = "";
-            if (range.startsWith("A")) colorCode = "🟢"; // Green for A
-            else if (range.startsWith("B")) colorCode = "🟡"; // Yellow for B
-            else if (range.startsWith("C")) colorCode = "🟠"; // Orange for C
-            else if (range.startsWith("D")) colorCode = "🔴"; // Red for D
-            else colorCode = "⚫"; // Black for F
+            String colorIndicator = "";
+            if (range.startsWith("A")) colorIndicator = "[A] ";
+            else if (range.startsWith("B")) colorIndicator = "[B] ";
+            else if (range.startsWith("C")) colorIndicator = "[C] ";
+            else if (range.startsWith("D")) colorIndicator = "[D] ";
+            else colorIndicator = "[F] ";
 
-            System.out.printf("%s %-12s: %5d grades %s %6.1f%%%n",
-                    colorCode, range, count, bar, percentage);
+            System.out.printf("%s%-12s: %5d grades %s %6.1f%%%n",
+                    colorIndicator, range, count, bar, percentage);
         }
         System.out.println();
     }
@@ -523,8 +531,7 @@ public class StatisticsDashboard {
         for (int i = 0; i < data.topPerformers.size(); i++) {
             StudentPerformance perf = data.topPerformers.get(i);
 
-            // Performance indicator bars
-            int starCount = (int) Math.round(perf.averageGrade / 20); // 5 stars max
+            int starCount = (int) Math.round(perf.averageGrade / 20);
             String stars = "★".repeat(starCount) + "☆".repeat(5 - starCount);
 
             System.out.printf("%d. %-8s - %-20s - %6.1f%% %s GPA: %.2f%n",
@@ -542,12 +549,10 @@ public class StatisticsDashboard {
             return;
         }
 
-        // Find max average for scaling
         double maxAverage = data.subjectAverages.values().stream()
                 .max(Double::compare)
                 .orElse(100.0);
 
-        // Display vertical bar chart
         int chartHeight = 10;
 
         for (int level = chartHeight; level >= 0; level--) {
@@ -558,7 +563,6 @@ public class StatisticsDashboard {
                 double scaledHeight = (avg / maxAverage) * chartHeight;
 
                 if (level <= scaledHeight) {
-                    // Choose bar character based on performance
                     char barChar;
                     if (avg >= 90) barChar = '█';
                     else if (avg >= 80) barChar = '▓';
@@ -574,7 +578,6 @@ public class StatisticsDashboard {
             System.out.println();
         }
 
-        // X-axis labels
         System.out.print("     +");
         for (int i = 0; i < data.subjectAverages.size(); i++) {
             System.out.print("----");
@@ -587,7 +590,6 @@ public class StatisticsDashboard {
         }
         System.out.println();
 
-        // Subject averages
         System.out.println("\nSubject Averages:");
         data.subjectAverages.forEach((subject, avg) ->
                 System.out.printf("  %-15s: %6.1f%%%n", subject, avg)
@@ -605,7 +607,6 @@ public class StatisticsDashboard {
         }
 
         for (TaskStatus task : data.activeTasks) {
-            // Progress bar
             int progressBarLength = 20;
             int filledLength = (int) Math.round((task.progress * progressBarLength) / 100.0);
             String progressBar = "█".repeat(filledLength) + "░".repeat(progressBarLength - filledLength);
@@ -617,7 +618,6 @@ public class StatisticsDashboard {
                     statusSymbol, task.taskName, progressBar, task.progress, task.elapsedTime);
         }
 
-        // Thread pool simulation
         System.out.println("\nThread Pool Status:");
         System.out.println("  Fixed Pool (Reports): 3/5 active, Queue: 2 pending");
         System.out.println("  Cached Pool (Stats): 2/8 active");
@@ -640,7 +640,6 @@ public class StatisticsDashboard {
         System.out.printf("Grade Range:      %8.1f%% - %.1f%%%n",
                 data.averageGrade - data.stdDeviation, data.averageGrade + data.stdDeviation);
 
-        // Grade distribution percentages
         System.out.println("\nGRADE DISTRIBUTION PERCENTAGES:");
         System.out.println("-".repeat(40));
         data.gradeDistribution.forEach((range, count) -> {
@@ -648,7 +647,6 @@ public class StatisticsDashboard {
             System.out.printf("%-12s: %6.1f%% (%d grades)%n", range, percentage, count);
         });
 
-        // Performance analysis
         System.out.println("\nPERFORMANCE ANALYSIS:");
         System.out.println("-".repeat(40));
         if (data.averageGrade >= 85) {
@@ -665,16 +663,15 @@ public class StatisticsDashboard {
             System.out.println("✗ Significant portion of students are struggling");
         }
 
-        // Recommendations based on distribution
         long failingCount = data.gradeDistribution.getOrDefault("F (0-59)", 0L);
-        if (failingCount > data.totalGrades * 0.1) { // More than 10% failing
+        if (failingCount > data.totalGrades * 0.1) {
             System.out.println("\n⚠️  RECOMMENDATION:");
             System.out.println("  - " + failingCount + " students are failing (F grade)");
             System.out.println("  - Consider additional support or review sessions");
         }
 
         long aCount = data.gradeDistribution.getOrDefault("A (90-100)", 0L);
-        if (aCount > data.totalGrades * 0.3) { // More than 30% getting A
+        if (aCount > data.totalGrades * 0.3) {
             System.out.println("\n✓ POSITIVE INDICATOR:");
             System.out.println("  - " + aCount + " students achieving A grades");
             System.out.println("  - Course material appears well-matched to student level");
@@ -700,10 +697,6 @@ public class StatisticsDashboard {
         System.out.printf("Max Memory:   %8.1f MB%n", maxMB);
         System.out.printf("Utilization:  %8.1f%%%n", usedPercent);
 
-        // Stacked bar chart
-        System.out.println("\nMemory Allocation:");
-        System.out.println("-".repeat(40));
-
         int totalBars = 40;
         int usedBars = (int) Math.round((usedPercent * totalBars) / 100.0);
         int freeBars = totalBars - usedBars;
@@ -712,9 +705,8 @@ public class StatisticsDashboard {
         String freeBar = "░".repeat(Math.max(0, freeBars));
 
         System.out.printf("[%s%s]%n", usedBar, freeBar);
-        System.out.printf("├ Used ┤%s Free%n", " ".repeat(usedBars - 4));
+        System.out.printf("├ Used ┤%s Free%n", " ".repeat(Math.max(0, usedBars - 4)));
 
-        // Memory status
         System.out.println("\nMemory Status:");
         System.out.println("-".repeat(40));
         if (usedPercent < 50) {
@@ -731,7 +723,6 @@ public class StatisticsDashboard {
             System.out.println("✗ Close unused applications or increase heap size");
         }
 
-        // Recommendations
         System.out.println("\nRECOMMENDATIONS:");
         System.out.println("-".repeat(40));
         if (usedPercent > 80) {
@@ -791,7 +782,6 @@ public class StatisticsDashboard {
         System.out.println("\nPress Enter to continue...");
         try {
             System.in.read();
-            // Clear the input buffer
             while (System.in.available() > 0) {
                 System.in.read();
             }
@@ -800,18 +790,36 @@ public class StatisticsDashboard {
         }
     }
 
-    public void stop() {
+    public synchronized void stop() {
+        if (!isRunning.get()) return;
+
         shouldStop = true;
         isRunning.set(false);
         isPaused.set(false);
 
-        // Cancel scheduled task
         if (updateTask != null) {
             updateTask.cancel(false);
+            updateTask = null;
         }
 
-        // Shutdown schedulers
-        if (dashboardScheduler != null) {
+        // Don't close commandReader - it can close System.in
+        // Just set it to null and let it be garbage collected
+        commandReader = null;
+
+        try {
+            while (System.in.available() > 0) {
+                System.in.read();
+            }
+        } catch (IOException e) {
+            // Ignore
+        }
+
+        clearScreen();
+        System.out.println("\nDashboard stopped. Press Enter to return to main menu...");
+    }
+
+    public static void shutdownAll() {
+        if (dashboardScheduler != null && !dashboardScheduler.isShutdown()) {
             dashboardScheduler.shutdown();
             try {
                 if (!dashboardScheduler.awaitTermination(3, TimeUnit.SECONDS)) {
@@ -823,13 +831,17 @@ public class StatisticsDashboard {
             }
         }
 
-        // Shutdown command executor
-        if (commandExecutor != null) {
-            commandExecutor.shutdownNow();
+        if (commandExecutor != null && !commandExecutor.isShutdown()) {
+            commandExecutor.shutdown();
+            try {
+                if (!commandExecutor.awaitTermination(3, TimeUnit.SECONDS)) {
+                    commandExecutor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                commandExecutor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
         }
-
-        clearScreen();
-        System.out.println("\nDashboard stopped. Press Enter to return to main menu...");
     }
 
     public boolean isRunning() {

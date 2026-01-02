@@ -6,6 +6,9 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class CacheManager {
+
+    private static CacheManager instance;
+
     // Cache configuration
     private static final int MAX_CACHE_SIZE = 150;
     private static final long CACHE_TTL = 300000; // 5 minutes in milliseconds
@@ -60,6 +63,13 @@ public class CacheManager {
 
         // Start background cleanup thread
         startCleanupThread();
+    }
+
+    public static synchronized CacheManager getInstance() {
+        if (instance == null) {
+            instance = new CacheManager();
+        }
+        return instance;
     }
 
     // Student caching
@@ -216,6 +226,11 @@ public class CacheManager {
         if (accessTimes.size() >= MAX_CACHE_SIZE * 0.8) { // 80% threshold
             cleanupExpiredEntries();
         }
+    }
+
+    public double getCacheHitRate() {
+        int total = cacheHits.get() + cacheMisses.get();
+        return total > 0 ? (cacheHits.get() * 100.0) / total : 0.0;
     }
 
     private void cleanupExpiredEntries() {

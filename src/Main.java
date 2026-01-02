@@ -26,7 +26,7 @@ public class Main {
     private static AuditLogger auditLogger = AuditLogger.getInstance();
     private static WatchServiceMonitor watchServiceMonitor;
     private static GPACalculator gpaCalculator = new GPACalculator(studentManager, gradeManager);
-    private static StatisticsDashboard statisticsDashboard = new StatisticsDashboard(studentManager, gradeManager);
+    private static StatisticsDashboard statisticsDashboard = new StatisticsDashboard(studentManager, gradeManager, CacheManager.getInstance());
     private static PatternSearchService patternSearchService = new PatternSearchService(studentManager, gradeManager);
     private static SearchService searchService = new SearchService(studentManager, gradeManager);
     private static StatisticsCalculator statisticsCalculator = new StatisticsCalculator(studentManager, gradeManager);
@@ -989,6 +989,10 @@ public class Main {
         System.out.println("=".repeat(80));
 
         try {
+            // Ensure dashboard has proper dependencies
+            CacheManager cacheManager = CacheManager.getInstance(); // Assuming you have this
+            statisticsDashboard = new StatisticsDashboard(studentManager, gradeManager, cacheManager);
+
             statisticsDashboard.startDashboard(5); // Refresh every 5 seconds
 
             // Wait for dashboard to stop before returning to main menu
