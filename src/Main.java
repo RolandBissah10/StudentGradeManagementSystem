@@ -1675,137 +1675,241 @@ public class Main {
 
     private static void patternBasedSearch() {
         System.out.println("\n" + "=".repeat(80));
-        System.out.println("              PATTERN-BASED SEARCH");
+        System.out.println("              PATTERN-BASED SEARCH (US-7)");
+        System.out.println("=".repeat(80));
+        System.out.println("Search using regex patterns with highlighting and statistics");
         System.out.println("=".repeat(80));
 
         try {
-            System.out.println("\nSearch Type:");
+            System.out.println("\n🔍 SEARCH TYPE:");
             System.out.println("1. Email Domain Pattern (e.g., @university.edu)");
             System.out.println("2. Phone Area Code Pattern (e.g., 555)");
             System.out.println("3. Student ID Pattern (e.g., STU0**)");
             System.out.println("4. Name Pattern (regex)");
-            System.out.println("5. Custom Regex Pattern");
-            System.out.print("Select type (1-5): ");
+            System.out.println("5. Custom Regex Pattern (any field)");
+            System.out.println("6. Grade Pattern (e.g., >85, A, 70-80)");
+            System.out.println("7. View Search Statistics");
+            System.out.print("Select type (1-7): ");
 
             String searchType = scanner.nextLine();
-            List<Student> results = new ArrayList<>();
 
+            if (searchType.equals("7")) {
+                patternSearchService.displaySearchStatistics();
+                System.out.println("\nPress Enter to continue...");
+                scanner.nextLine();
+                return;
+            }
+
+            Map<String, Object> searchResult = new HashMap<>();
             long startTime = System.currentTimeMillis();
 
+            // Declare variables outside switch so they're accessible in action menu
+            String field = "";
+            String domain = "";
+            String areaCode = "";
+            String idPattern = "";
+            String namePattern = "";
+            String regex = "";
+            String gradePattern = "";
+
             switch (searchType) {
-                case "1":
-                    System.out.print("Enter email domain pattern: ");
-                    String domain = scanner.nextLine().trim();
-                    results = patternSearchService.searchByEmailDomain(domain);
-                    break;
-                case "2":
-                    System.out.print("Enter phone area code pattern: ");
-                    String areaCode = scanner.nextLine().trim();
-                    results = patternSearchService.searchByPhoneAreaCode(areaCode);
+                case "1": // Email domain
+                    System.out.print("\nEnter email domain pattern (e.g., @university.edu): ");
+                    domain = scanner.nextLine().trim();
+                    searchResult = patternSearchService.searchByEmailDomain(domain);
+                    field = "email";
                     break;
 
-                case "3":
-                    System.out.print("Enter student ID pattern (use * for wildcard): ");
-                    String idPattern = scanner.nextLine().trim().toUpperCase();
-                    results = patternSearchService.searchByStudentIdPattern(idPattern);
+                case "2": // Phone area code
+                    System.out.print("\nEnter phone area code pattern (e.g., 555): ");
+                    areaCode = scanner.nextLine().trim();
+                    searchResult = patternSearchService.searchByPhoneAreaCode(areaCode);
+                    field = "phone";
                     break;
 
-                case "4":
-                    System.out.print("Enter name regex pattern: ");
-                    String namePattern = scanner.nextLine().trim();
-                    results = patternSearchService.searchByNamePattern(namePattern);
+                case "3": // Student ID pattern
+                    System.out.print("\nEnter student ID pattern (use * for wildcard, e.g., STU0*): ");
+                    idPattern = scanner.nextLine().trim().toUpperCase();
+                    searchResult = patternSearchService.searchByStudentIdPattern(idPattern);
+                    field = "id";
                     break;
 
-                case "5":
-                    System.out.print("Enter custom regex pattern: ");
-                    String regex = scanner.nextLine().trim();
+                case "4": // Name pattern
+                    System.out.print("\nEnter name regex pattern (e.g., ^J.* for names starting with J): ");
+                    namePattern = scanner.nextLine().trim();
+                    System.out.println("💡 Examples: ^J.* (starts with J), .*son$ (ends with son), .*Smith.* (contains Smith)");
+                    searchResult = patternSearchService.searchByNamePattern(namePattern);
+                    field = "name";
+                    break;
+
+                case "5": // Custom regex
+                    System.out.print("\nEnter custom regex pattern: ");
+                    regex = scanner.nextLine().trim();
                     System.out.print("Enter field to search (id/name/email/phone/type): ");
-                    String field = scanner.nextLine().trim().toLowerCase();
-                    results = patternSearchService.searchByCustomPattern(regex, field);
+                    field = scanner.nextLine().trim().toLowerCase();
+
+                    System.out.println("💡 Regex examples:");
+                    System.out.println("  • ^STU0.* - IDs starting with STU0");
+                    System.out.println("  • .*@.*\\.edu$ - Email ending with .edu");
+                    System.out.println("  • ^[A-M].* - Names starting with A-M");
+                    System.out.println("  \\d{3}-\\d{3}-\\d{4} - Phone format");
+
+                    searchResult = patternSearchService.searchByCustomPattern(regex, field);
+                    break;
+
+                case "6": // Grade pattern
+                    System.out.print("\nEnter grade pattern (e.g., >85, <60, 70-80, A, B+): ");
+                    gradePattern = scanner.nextLine().trim();
+                    System.out.println("💡 Supported patterns:");
+                    System.out.println("  • >85 (greater than 85%)");
+                    System.out.println("  • <60 (less than 60%)");
+                    System.out.println("  • 70-80 (between 70% and 80%)");
+                    System.out.println("  • A, B+, C (letter grades)");
+                    searchResult = patternSearchService.searchByGradePattern(gradePattern);
+                    field = "grade"; // Special field for grades
                     break;
 
                 default:
-                    System.out.println("Invalid choice!");
+                    System.out.println("❌ Invalid choice!");
                     return;
             }
 
             long searchTime = System.currentTimeMillis() - startTime;
 
-            if (!results.isEmpty()) {
-                searchService.displaySearchResults(results);
-                System.out.printf("\n✓ Search completed in %d ms%n", searchTime);
-                System.out.println(" Found " + results.size() + " students");
+            // Display results
+            patternSearchService.displaySearchResults(searchResult);
 
-                // Show action menu for matched students
-                boolean stayInSearchMenu = true;
-                while (stayInSearchMenu) {
-                    System.out.println("\n" + "─".repeat(60));
-                    System.out.println("ACTIONS FOR MATCHED STUDENTS");
-                    System.out.println("─".repeat(60));
-                    System.out.println("1.  Export search results");
-                    System.out.println("2.  Generate reports for matched students");
-                    System.out.println("3.  Send bulk email to matched students");
-                    System.out.println("4.  New search with different pattern");
-                    System.out.println("5.  Return to main menu");
-                    System.out.print("Select action (1-5): ");
+            // Show detailed view with highlighting if there are matches
+            if (searchResult.containsKey("matches")) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, String>> matches = (List<Map<String, String>>) searchResult.get("matches");
+                if (!matches.isEmpty()) {
+                    System.out.printf("\n⏱️  Search completed in %d ms%n", searchTime);
 
-                    String action = scanner.nextLine();
+                    // Store the search type for later use
+                    final String finalSearchType = searchType;
+                    final String finalField = field;
 
-                    switch (action) {
-                        case "1": // Export search results
-                            System.out.print("\nEnter filename for export: ");
-                            String filename = scanner.nextLine().trim();
-                            try {
-                                reportGenerator.exportSearchResults(results, filename);
-                                System.out.println("✓ Search results exported!");
-                            } catch (ExportException e) {
-                                System.err.println("✗ Export failed: " + e.getMessage());
-                            }
-                            break;
+                    // Show action menu
+                    boolean stayInMenu = true;
+                    while (stayInMenu) {
+                        System.out.println("\n" + "─".repeat(60));
+                        System.out.println("🎯 ACTIONS FOR MATCHED STUDENTS");
+                        System.out.println("─".repeat(60));
+                        System.out.println("1. View pattern match details with highlighting");
+                        System.out.println("2. Export search results");
+                        System.out.println("3. Generate reports for matched students");
+                        System.out.println("4. Send bulk email to matched students");
+                        System.out.println("5. New search with different pattern");
+                        System.out.println("6. Return to main menu");
+                        System.out.print("Select action (1-6): ");
 
-                        case "2": // Generate reports for matched students
-                            generateReportsForMatchedStudents(results);
-                            break;
+                        String action = scanner.nextLine();
 
-                        case "3": // Send bulk email to matched students
-                            sendBulkEmailToMatchedStudents(results);
-                            break;
+                        switch (action) {
+                            case "1": // View details with highlighting
+                                // Determine the correct field for highlighting
+                                String fieldForHighlight = finalField;
+                                if (finalSearchType.equals("6")) {
+                                    System.out.println("⚠️  Highlighting not available for grade pattern searches.");
+                                    System.out.println("   Use option 2 to view detailed results instead.");
+                                } else {
+                                    patternSearchService.displayPatternMatchDetails(searchResult, fieldForHighlight);
+                                }
+                                break;
 
-                        case "4": // New search with different pattern
-                            stayInSearchMenu = false;
-                            patternBasedSearch(); // Recursive call for new search
-                            return; // Exit current method
+                            case "2": // Export search results
+                                System.out.print("\nEnter filename for export (without extension): ");
+                                String filename = scanner.nextLine().trim();
+                                try {
+                                    // Convert matches to student list
+                                    List<Student> students = new ArrayList<>();
+                                    @SuppressWarnings("unchecked")
+                                    List<Map<String, String>> matchesList = (List<Map<String, String>>) searchResult.get("matches");
+                                    for (Map<String, String> match : matchesList) {
+                                        Student student = studentManager.findStudent(match.get("studentId"));
+                                        if (student != null) {
+                                            students.add(student);
+                                        }
+                                    }
 
-                        case "5": // Return to main menu
-                            stayInSearchMenu = false;
-                            System.out.println("\nReturning to main menu...");
-                            break;
+                                    reportGenerator.exportSearchResults(students, filename);
+                                    System.out.println("✓ Search results exported!");
+                                } catch (Exception e) {
+                                    System.err.println("✗ Export failed: " + e.getMessage());
+                                }
+                                break;
 
-                        default:
-                            System.out.println("Invalid option! Please try again.");
+                            case "3": // Generate reports
+                                @SuppressWarnings("unchecked")
+                                List<Map<String, String>> matchesForReport = (List<Map<String, String>>) searchResult.get("matches");
+                                if (!matchesForReport.isEmpty()) {
+                                    List<Student> reportStudents = new ArrayList<>();
+                                    for (Map<String, String> match : matchesForReport) {
+                                        Student student = studentManager.findStudent(match.get("studentId"));
+                                        if (student != null) {
+                                            reportStudents.add(student);
+                                        }
+                                    }
+                                    generateReportsForMatchedStudents(reportStudents);
+                                }
+                                break;
+
+                            case "4": // Send bulk email
+                                @SuppressWarnings("unchecked")
+                                List<Map<String, String>> emailMatches = (List<Map<String, String>>) searchResult.get("matches");
+                                if (!emailMatches.isEmpty()) {
+                                    List<Student> emailStudents = new ArrayList<>();
+                                    for (Map<String, String> match : emailMatches) {
+                                        Student student = studentManager.findStudent(match.get("studentId"));
+                                        if (student != null) {
+                                            emailStudents.add(student);
+                                        }
+                                    }
+                                    sendBulkEmailToMatchedStudents(emailStudents);
+                                }
+                                break;
+
+                            case "5": // New search
+                                stayInMenu = false;
+                                patternBasedSearch(); // Recursive call
+                                return;
+
+                            case "6": // Return to main menu
+                                stayInMenu = false;
+                                System.out.println("\nReturning to main menu...");
+                                break;
+
+                            default:
+                                System.out.println("❌ Invalid option! Please try again.");
+                        }
                     }
-                }
-
-            } else {
-                System.out.println("\n No students found matching the pattern.");
-
-                // Offer to try a different pattern
-                System.out.print("\nWould you like to try a different pattern? (Y/N): ");
-                String tryAgain = scanner.nextLine();
-                if (tryAgain.equalsIgnoreCase("Y")) {
-                    patternBasedSearch();
+                } else {
+                    System.out.println("\n No students found matching the pattern.");
+                    System.out.print("\nWould you like to try a different pattern? (Y/N): ");
+                    String tryAgain = scanner.nextLine();
+                    if (tryAgain.equalsIgnoreCase("Y")) {
+                        patternBasedSearch();
+                    }
                 }
             }
 
+            // Log the operation
+            int matchesFound = searchResult.containsKey("matches") ?
+                    ((List<?>) searchResult.get("matches")).size() : 0;
             auditLogger.logWithTime("PATTERN_SEARCH",
-                    String.format("Pattern search found %d students", results.size()),
+                    String.format("%s search found %d students",
+                            searchResult.getOrDefault("searchType", "Pattern"), matchesFound),
                     searchTime, null);
 
         } catch (Exception e) {
-            System.err.println("Pattern search error: " + e.getMessage());
+            System.err.println("\n❌ Pattern search error: " + e.getMessage());
+            e.printStackTrace();
             auditLogger.logError("PATTERN_SEARCH", "Pattern search failed", e.getMessage(), null);
         }
     }
+
+
 
 // ============================================================================
 // NEW HELPER METHODS FOR THE ACTIONS
