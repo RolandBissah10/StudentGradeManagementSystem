@@ -19,7 +19,10 @@ public class GradeManager {
     private long cacheHits = 0;
     private long cacheMisses = 0;
 
-    public GradeManager() {
+    // StudentManager reference for GPA updates
+    private StudentManager studentManager;
+
+    public GradeManager(StudentManager studentManager) {
         studentGradesMap = new HashMap<>();
         gradeByIdMap = new HashMap<>();
         gradesByDate = new TreeMap<>(Collections.reverseOrder()); // Newest first
@@ -28,6 +31,7 @@ public class GradeManager {
 
         studentAveragesCache = new HashMap<>();
         subjectAveragesCache = new HashMap<>();
+        this.studentManager = studentManager;
     }
 
     /**
@@ -48,12 +52,27 @@ public class GradeManager {
         gradesBySubject.computeIfAbsent(subjectName, k -> new ArrayList<>()).add(grade);
         gradeHistory.addFirst(grade); // Add to beginning for reverse chronological
 
+        // Track course code in HashSet (prevents duplicates)
+        String courseCode = grade.getSubject().getSubjectCode();
+        studentManager.addCourseCode(courseCode);
+
         // Invalidate caches
         studentAveragesCache.remove(studentId);
         subjectAveragesCache.clear();
 
+        // Update student GPA and honors eligibility
+        updateStudentGPAAndHonors(studentId);
+
         System.out.println("✓ Grade added successfully!");
         displayCollectionPerformance();
+    }
+
+    /**
+     * Updates student GPA and honors eligibility
+     */
+    private void updateStudentGPAAndHonors(String studentId) {
+        double overallAvg = calculateOverallAverage(studentId);
+        studentManager.updateStudentGPA(studentId, overallAvg, this);
     }
 
     public void viewGradesByStudent(String studentId, Student student) {
@@ -69,7 +88,15 @@ public class GradeManager {
         // Use cached average if available
         double overallAvg = getCachedAverage(studentId);
         System.out.println("Current Average: " + String.format("%.1f", overallAvg) + "%");
-        System.out.println("Status: " + (overallAvg >= student.getPassingGrade() ? "PASSING ✓" : "FAILING"));
+        System.out.println("GPA: " + String.format("%.2f", student.getGpa()));
+        System.out.println("Status: " + student.getStatus());
+
+        // Show honors eligibility for honors students
+        if (student instanceof HonorsStudent) {
+            HonorsStudent honorsStudent = (HonorsStudent) student;
+            System.out.println("Honors Eligible: " +
+                    (honorsStudent.checkHonorsEligibility() ? "✓ Yes (≥85%)" : "✗ No (<85%)"));
+        }
 
         System.out.println("\nGRADE HISTORY (Newest First)");
         System.out.println("GRD ID | DATE       | SUBJECT     | TYPE    | GRADE | PERFORMANCE");
@@ -113,12 +140,12 @@ public class GradeManager {
         System.out.printf("Core Subjects Average:    %6.1f%%%n", coreAvg);
         System.out.printf("Elective Subjects Average: %6.1f%%%n", electiveAvg);
         System.out.printf("Overall Average:          %6.1f%%%n", overallAvg);
+        System.out.printf("Current GPA:              %6.2f%n", student.getGpa());
 
         System.out.println("\n=== GRADE DISTRIBUTION ===");
         gradeDistribution.forEach((range, count) ->
                 System.out.printf("%-10s: %2d grades%n", range, count));
 
-        displayPerformanceSummary(student, overallAvg, coreAvg);
         displayCachePerformance();
     }
 
@@ -193,26 +220,6 @@ public class GradeManager {
         if (grade >= 70) return "★★★☆☆";
         if (grade >= 60) return "★★☆☆☆";
         return "★☆☆☆☆";
-    }
-
-    private void displayPerformanceSummary(Student student, double overallAvg, double coreAvg) {
-        System.out.println("\n=== PERFORMANCE SUMMARY ===");
-
-        boolean passingCore = coreAvg >= student.getPassingGrade();
-        boolean passingOverall = overallAvg >= student.getPassingGrade();
-
-        System.out.println((passingCore ? "✓ " : "✗ ") +
-                "Core subjects: " + (passingCore ? "PASSING" : "NOT PASSING"));
-        System.out.println((passingOverall ? "✓ " : "✗ ") +
-                "Overall average: " + (passingOverall ? "PASSING" : "NOT PASSING"));
-
-        if (student instanceof HonorsStudent) {
-            HonorsStudent honorsStudent = (HonorsStudent) student;
-            boolean honorsEligible = overallAvg >= 85.0;
-            honorsStudent.setHonorsEligible(honorsEligible);
-            System.out.println((honorsEligible ? "✓ " : "✗ ") +
-                    "Honors eligibility: " + (honorsEligible ? "ELIGIBLE" : "NOT ELIGIBLE"));
-        }
     }
 
     private void displayCachePerformance() {

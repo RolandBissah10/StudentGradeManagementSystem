@@ -1,22 +1,19 @@
 package models;
 
-import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-public abstract class Student implements Serializable {
-    private static final long serialVersionUID = 1L;
+public abstract class Student {
+    private static int idCounter = 0;
 
     private String studentId;
     private String name;
     private int age;
     private String email;
     private String phone;
-    private String status;
     private LocalDate enrollmentDate;
-
-    private static int studentCounter = 0;
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private double averageGrade;
+    private double gpa;
 
     public Student(String name, int age, String email, String phone, String enrollmentDate) {
         this.studentId = generateStudentId();
@@ -24,39 +21,70 @@ public abstract class Student implements Serializable {
         this.age = age;
         this.email = email;
         this.phone = phone;
-        this.status = "Active";
-        this.enrollmentDate = LocalDate.parse(enrollmentDate, DATE_FORMATTER);
+        this.enrollmentDate = LocalDate.parse(enrollmentDate);
+        this.averageGrade = 0.0;
+        this.gpa = 0.0;
     }
 
     private String generateStudentId() {
-        studentCounter++;
-        return String.format("STU%03d", studentCounter);
+        idCounter++;
+        return String.format("STU%03d", idCounter);
     }
 
+    // Abstract methods
     public abstract void displayStudentDetails();
     public abstract String getStudentType();
     public abstract double getPassingGrade();
+    public abstract String getStatus();
 
-    public String getStudentId() { return studentId; }
-    public String getName() { return name; }
-    public int getAge() { return age; }
-    public String getEmail() { return email; }
-    public String getPhone() { return phone; }
-    public String getStatus() { return status; }
-    public LocalDate getEnrollmentDate() { return enrollmentDate; }
+    // GPA methods
+    public double getGpa() {
+        return gpa;
+    }
+
+    public void setGpa(double gpa) {
+        this.gpa = gpa;
+    }
+
+    // Getters and setters
+    public String getStudentId() {
+        return studentId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public LocalDate getEnrollmentDate() {
+        return enrollmentDate;
+    }
+
     public String getEnrollmentDateString() {
-        return enrollmentDate.format(DATE_FORMATTER);
+        return enrollmentDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public double getAverageGrade() {
+        return averageGrade;
     }
 
-    public void setEnrollmentDate(String date) {
-        this.enrollmentDate = LocalDate.parse(date, DATE_FORMATTER);
+    public void setAverageGrade(double averageGrade) {
+        this.averageGrade = averageGrade;
     }
 
-    public static int getStudentCounter() {
-        return studentCounter;
+    public String getDetailedStatus() {
+        return String.format("Average: %.1f%% | GPA: %.2f | Status: %s",
+                averageGrade, gpa, getStatus());
     }
 }

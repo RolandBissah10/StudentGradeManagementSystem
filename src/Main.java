@@ -15,7 +15,7 @@ import utils.ValidationUtils.ValidationResult;
 public class Main {
     // Managers
     private static StudentManager studentManager = new StudentManager();
-    private static GradeManager gradeManager = new GradeManager();
+    private static GradeManager gradeManager = new GradeManager(studentManager);
 
     // Services
     private static ReportGenerator reportGenerator = new ReportGenerator(studentManager, gradeManager);
@@ -153,7 +153,7 @@ public class Main {
         int regularCount = 0;
         int honorsCount = 0;
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 50; i++) {
             // Generate random student data
             String firstName = firstNames[random.nextInt(firstNames.length)];
             String lastName = lastNames[random.nextInt(lastNames.length)];
@@ -201,7 +201,7 @@ public class Main {
         subjects.add(new ElectiveSubject("Art", "ART101"));
         subjects.add(new ElectiveSubject("Music", "MUS101"));
 
-        List<Student> students = (List<Student>) studentManager.getAllStudents();
+        List<Student> students = (List<Student>) studentManager.getStudents();
 
         if (students.isEmpty()) {
             System.out.println("⚠ No students found.");
@@ -234,8 +234,9 @@ public class Main {
                 totalGrades++;
             }
 
-            student.setStatus(isFailing ? "FAILING" : "PASSING");
-            if (isFailing) failingCount++;
+            double avgGrade = gradeManager.calculateOverallAverage(student.getStudentId());
+            boolean failing = avgGrade < student.getPassingGrade();
+            if (failing) failingCount++;
         }
 
         System.out.println("✓ Added " + totalGrades + " grades");
@@ -1390,24 +1391,64 @@ public class Main {
 
     private static void bulkImportGrades() {
         System.out.println("\n" + "=".repeat(80));
-        System.out.println("              BULK IMPORT GRADES");
+        System.out.println("              BULK IMPORT GRADES (NIO.2 STREAMING)");
         System.out.println("=".repeat(80));
 
-        System.out.println("\nInstructions:");
-        System.out.println("1. Place your CSV file in: ./imports/");
-        System.out.println("2. File format: StudentID,SubjectName,SubjectType,Grade");
-        System.out.println("3. Example: STU001,Mathematics,Core,85.5");
-        System.out.println("4. SubjectType must be 'Core' or 'Elective'");
-        System.out.println("5. Grades must be between 0 and 100");
+        // List available files first
+        bulkImportService.listAvailableFiles();
 
-        System.out.print("\nEnter filename (without .csv extension): ");
+        System.out.println("\n📋 Supported CSV Formats:");
+        System.out.println("1. Simple format (no header):");
+        System.out.println("   StudentID,SubjectName,SubjectType,Grade");
+        System.out.println("   Example: STU001,Mathematics,Core,85.5");
+        System.out.println();
+        System.out.println("2. With header row:");
+        System.out.println("   StudentID,SubjectName,SubjectType,Grade");
+        System.out.println("   STU001,Mathematics,Core,85.5");
+        System.out.println();
+        System.out.println("3. With GradeID column:");
+        System.out.println("   GradeID,StudentID,SubjectName,SubjectType,Grade");
+        System.out.println("   GRD001,STU001,Mathematics,Core,85.5");
+
+        System.out.println("\n📝 Validation Rules:");
+        System.out.println("  • Student ID: STU### format (STU followed by 3 digits)");
+        System.out.println("  • Subject Type: 'Core' or 'Elective' (case-insensitive)");
+        System.out.println("  • Grade: 0-100 (whole numbers or decimals)");
+        System.out.println("  • Student must exist in system before importing grades");
+
+        System.out.print("\nEnter filename (with or without .csv extension): ");
         String filename = scanner.nextLine().trim();
 
+        if (filename.isEmpty()) {
+            System.out.println("⚠️  No filename entered. Operation cancelled.");
+            return;
+        }
+
+        // Offer to create sample files if none exist
+        Path importsDir = Paths.get("imports");
         try {
+            if (!Files.exists(importsDir) ||
+                    !Files.list(importsDir).anyMatch(p -> p.toString().toLowerCase().endsWith(".csv"))) {
+                System.out.print("\nNo CSV files found. Create sample files? (Y/N): ");
+                String response = scanner.nextLine();
+                if (response.equalsIgnoreCase("Y")) {
+                    bulkImportService.createSampleCSV();
+                    System.out.println("\nNow try importing one of the sample files.");
+                    return;
+                }
+            }
+        } catch (IOException e) {
+            // Ignore, just proceed
+        }
+
+        try {
+            System.out.println("\n" + "=".repeat(80));
+            System.out.println("Starting bulk import...");
             bulkImportService.importGradesFromCSV(filename);
             auditLogger.logSimple("BULK_IMPORT", "Bulk import from " + filename, null);
         } catch (Exception e) {
-            System.err.println("Bulk import error: " + e.getMessage());
+            System.err.println("\n❌ Bulk import error: " + e.getMessage());
+            e.printStackTrace();
             auditLogger.logError("BULK_IMPORT", "Bulk import failed", e.getMessage(), null);
         }
     }

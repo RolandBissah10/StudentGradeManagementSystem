@@ -2,6 +2,7 @@ package services;
 
 import models.*;
 import exceptions.ExportException;
+
 import java.io.*;
 import java.nio.file.*;
 import java.time.LocalDateTime;
@@ -10,6 +11,13 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.stream.Collectors;
+
+// PDFBox imports
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 
 public class BatchReportService {
     private ReportGenerator reportGenerator;
@@ -211,7 +219,6 @@ public class BatchReportService {
             }
         }
 
-        // First row: Completed tasks (up to threadCount)
         // First row: Completed tasks (up to threadCount)
         int startIdx = Math.max(0, completedTasks - threadCount);
         for (int i = 0; i < threadCount; i++) {
@@ -529,38 +536,65 @@ public class BatchReportService {
                 // Determine file path based on report type
                 String fileExt;
                 String subDir;
+                String filePathStr;
+
                 switch (reportType.toLowerCase()) {
                     case "pdf":
                         fileExt = "_summary.pdf";
                         subDir = "pdf";
+                        Path pdfPath = Paths.get("reports", subDir, result.getFilename() + fileExt);
+                        filePathStr = pdfPath.toString();
+
+                        // Generate actual PDF using PDFBox
+                        generatePDF(pdfPath, student, batchId, reportType);
+
+                        result.setFilePath(filePathStr);
+                        result.setSuccess(true);
                         break;
+
                     case "text":
                         fileExt = "_detailed.txt";
                         subDir = "text";
+                        Path textPath = Paths.get("reports", subDir, result.getFilename() + fileExt);
+                        filePathStr = textPath.toString();
+
+                        // Write text content
+                        String textContent = String.format(
+                                "Batch Report: %s\nStudent: %s\nStudent ID: %s\nReport Type: %s\nGenerated: %s\n",
+                                batchId, student.getName(), student.getStudentId(),
+                                reportType, LocalDateTime.now()
+                        );
+
+                        Files.write(textPath, textContent.getBytes(),
+                                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+                        result.setFilePath(filePathStr);
+                        result.setSuccess(true);
                         break;
+
                     case "excel":
                         fileExt = ".csv";
                         subDir = "excel";
+                        Path csvPath = Paths.get("reports", subDir, result.getFilename() + fileExt);
+                        filePathStr = csvPath.toString();
+
+                        // Write CSV content
+                        String csvContent = String.format(
+                                "BatchID,StudentID,StudentName,ReportType,Generated\n%s,%s,%s,%s,%s",
+                                batchId, student.getStudentId(), student.getName(),
+                                reportType, LocalDateTime.now()
+                        );
+
+                        Files.write(csvPath, csvContent.getBytes(),
+                                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+                        result.setFilePath(filePathStr);
+                        result.setSuccess(true);
                         break;
+
                     default:
                         throw new ExportException("Unknown report type: " + reportType);
                 }
-
-                // Create the file
-                String filename = result.getFilename() + fileExt;
-                Path filePath = Paths.get("reports", subDir, filename);
-
-                // Write some content to the file
-                String content = String.format(
-                        "Batch Report: %s\nStudent: %s\nReport Type: %s\nGenerated: %s\n",
-                        batchId, student.getName(), reportType, LocalDateTime.now()
-                );
-
-                Files.write(filePath, content.getBytes(),
-                        StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-
-                result.setFilePath(filePath.toString());
-                result.setSuccess(true);
 
                 this.processingTime = System.currentTimeMillis() - startTime;
                 result.setProcessingTime(this.processingTime);
@@ -572,6 +606,7 @@ public class BatchReportService {
                 result.setSuccess(false);
                 result.setErrorMessage(e.getMessage());
                 failedTasks.incrementAndGet();
+                e.printStackTrace();
             } finally {
                 isProcessing = false;
                 isCompleted = true;
@@ -579,6 +614,49 @@ public class BatchReportService {
             }
 
             return result;
+        }
+
+        private void generatePDF(Path pdfPath, Student student, String batchId, String reportType) throws IOException {
+            try (PDDocument document = new PDDocument()) {
+                PDPage page = new PDPage();
+                document.addPage(page);
+
+                try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
+                    contentStream.beginText();
+
+                    // Use Standard14Fonts for PDFBox 3.x compatibility
+                    contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 12);
+                    contentStream.newLineAtOffset(100, 700);
+                    contentStream.showText("STUDENT GRADE REPORT - BATCH: " + batchId);
+
+                    contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 11);
+                    contentStream.newLineAtOffset(0, -25);
+                    contentStream.showText("Student Information:");
+                    contentStream.newLineAtOffset(0, -18);
+                    contentStream.showText("  Name: " + student.getName());
+                    contentStream.newLineAtOffset(0, -18);
+                    contentStream.showText("  ID: " + student.getStudentId());
+                    contentStream.newLineAtOffset(0, -18);
+                    contentStream.showText("  Email: " + student.getEmail());
+
+                    contentStream.newLineAtOffset(0, -25);
+                    contentStream.showText("Report Details:");
+                    contentStream.newLineAtOffset(0, -18);
+                    contentStream.showText("  Type: " + reportType + " Summary");
+                    contentStream.newLineAtOffset(0, -18);
+                    contentStream.showText("  Generated: " + LocalDateTime.now());
+                    contentStream.newLineAtOffset(0, -18);
+                    contentStream.showText("  Batch ID: " + batchId);
+
+                    contentStream.newLineAtOffset(0, -30);
+                    contentStream.showText("--- End of Report ---");
+
+                    contentStream.endText();
+                }
+
+                // Save the PDF
+                document.save(pdfPath.toFile());
+            }
         }
     }
 

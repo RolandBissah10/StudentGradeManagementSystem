@@ -20,7 +20,7 @@ public class GPACalculatorTest {
     @BeforeEach
     public void setUp() {
         studentManager = new StudentManager();
-        gradeManager = new GradeManager();
+        gradeManager = new GradeManager(studentManager);
         calculator = new GPACalculator(studentManager, gradeManager);
     }
 

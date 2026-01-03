@@ -18,7 +18,7 @@ public class StatisticsCalculatorTest {
     @BeforeEach
     public void setUp() {
         studentManager = new StudentManager();
-        gradeManager = new GradeManager();
+        gradeManager = new GradeManager(studentManager);
         statisticsCalculator = new StatisticsCalculator(studentManager, gradeManager);
 
         // Setup sample students WITH ENROLLMENT DATE (added 5th parameter)
@@ -628,4 +628,6 @@ public class StatisticsCalculatorTest {
             }
         }
     }
+
+
 }
