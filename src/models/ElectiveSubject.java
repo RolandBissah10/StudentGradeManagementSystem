@@ -4,7 +4,7 @@ public class ElectiveSubject extends Subject {
     private boolean mandatory = false;
 
     public ElectiveSubject(String subjectName, String subjectCode) {
-        super(subjectName, subjectCode);
+        super(subjectName, subjectCode, "Core");
     }
 
     @Override

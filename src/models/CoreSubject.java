@@ -4,7 +4,7 @@ public class CoreSubject extends Subject {
     private boolean mandatory = true;
 
     public CoreSubject(String subjectName, String subjectCode) {
-        super(subjectName, subjectCode);
+        super(subjectName, subjectCode, "Core");
     }
 
     @Override

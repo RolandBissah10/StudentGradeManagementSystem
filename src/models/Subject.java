@@ -4,7 +4,7 @@ public abstract class Subject {
     private String subjectName;
     private String subjectCode;
 
-    public Subject(String subjectName, String subjectCode) {
+    public Subject(String subjectName, String subjectCode, String core) {
         this.subjectName = subjectName;
         this.subjectCode = subjectCode;
     }
